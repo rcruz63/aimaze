@@ -1,6 +1,8 @@
 # src/aimaze/game_state.py
 
 from aimaze.dungeon import get_simulated_dungeon_layout
+from aimaze.config import load_config
+
 
 def initialize_game_state():
     """
@@ -8,6 +10,8 @@ def initialize_game_state():
     This is where the AI would start preparing the environment.
     """
     print("--- INICIALIZANDO JUEGO ---")
+    load_config()
+
     game_state = {
         "player_location_id": "inicio",  # ID of the player's current location
         "game_over": False,

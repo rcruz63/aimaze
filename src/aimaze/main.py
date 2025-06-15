@@ -4,7 +4,7 @@ from aimaze.game_state import initialize_game_state
 from aimaze.display import display_scenario
 from aimaze.input import get_player_input
 from aimaze.actions import process_player_action
-from . import dungeon # Importamos dungeon aunque solo lo use game_state directamente por ahora
+
 
 def game_loop():
     """
