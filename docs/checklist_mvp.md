@@ -6,7 +6,7 @@
 - [x] Crear archivo src/aimaze/__init__.py
 - [x] Configurar python-dotenv
 - [x] Actualizar game_state.py para usar configuración
-- [ ] Generar requirements.txt
+- [x] Generar requirements.txt
 - [ ] Test básico de initialize_game_state
 
 ### Paso 1.2: Descripción de Ubicación Impulsada por IA (Primera Llamada LLM)
