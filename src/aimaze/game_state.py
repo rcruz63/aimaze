@@ -2,6 +2,7 @@
 
 from aimaze.dungeon import get_simulated_dungeon_layout
 from aimaze.config import load_config
+from aimaze.player import Player
 
 
 def initialize_game_state():
@@ -16,8 +17,7 @@ def initialize_game_state():
         "player_location_id": "inicio",  # ID of the player's current location
         "game_over": False,
         "objective_achieved": False,
-        "player_attributes": {},         # Placeholder for player attributes (strength, dexterity, etc.)
-        "inventory": []                  # Placeholder for player inventory
+        "player": Player()               # Initialize Player model
     }
 
     print("Here the AI will be asked to: ")

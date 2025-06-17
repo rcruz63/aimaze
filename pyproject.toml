@@ -8,12 +8,15 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.115.12",
+    "httpx>=0.28.1",
     "langchain>=0.3.25",
     "langfuse>=3.0.1",
     "openai>=1.86.0",
     "pydantic>=2.11.7",
     "pytest>=8.4.0",
     "python-dotenv>=1.1.0",
+    "uvicorn>=0.34.3",
 ]
 
 [tool.pytest.ini_options]
