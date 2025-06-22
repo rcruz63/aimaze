@@ -20,8 +20,8 @@ Este documento sirve como una checklist concisa para seguir el progreso del desa
 ### **Paso 1.2: Modelado del Jugador y Estado Básico (player.py, game_state.py)**
 
 * [x] Definir Pydantic BaseModel Player en src/aimaze/player.py con atributos (strength, dexterity, health, xp, inventory), gain_xp(), y take_damage().  
-* [ ] Integrar Player en src/aimaze/game_state.py, inicializando game_state['player'].  
-* [ ] **Test (1.2):** Crear tests/test_player.py y verificar inicialización, gain_xp(), y take_damage().
+* [x] Integrar Player en src/aimaze/game_state.py, inicializando game_state['player'].  
+* [x] **Test (1.2):** Crear tests/test_player.py y verificar inicialización, gain_xp(), y take_damage().
 
 ### **Paso 1.3: Generación de Descripción de Ubicación y Arte ASCII (ai_connector.py, display.py)**
 

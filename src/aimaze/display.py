@@ -1,9 +1,12 @@
 # src/aimaze/display.py
 
+from .ai_connector import generate_location_description
+
+
 def display_scenario(game_state):
     """
     Displays the current location description and available options.
-    Here the AI or pre-generated data will fill in the details.
+    Uses AI to generate immersive textual descriptions (no ASCII art).
     """
     current_loc_id = game_state["player_location_id"]
     scenario_data = game_state["simulated_dungeon_layout"].get(current_loc_id)
@@ -15,16 +18,32 @@ def display_scenario(game_state):
 
     print("\n" + "="*50)
     print(f"[{current_loc_id.replace('_', ' ').upper()}]")
-    print("Here the AI will generate/display the ASCII art for the location.")
-    print("Here the AI will generate/display the detailed description of the location")
-    # Placeholder example for the description
-    description_placeholders = {
-        "inicio_desc": "You are at the dusty entrance of the dungeon. A cold breeze embraces you.",
-        "pasillo_desc": "A winding, damp corridor stretches before you. Water drips resonate.",
-        "sala_desc": "A room with strange runes carved into the walls. A faint glow emanates from the center.",
-        "final_desc": "Before you stands a large door, it seems to be the exit. The light outside is a beacon of hope."
-    }
-    print(description_placeholders.get(scenario_data["description_id"], "Description by the AI."))
+    
+    # Generar o recuperar descripción de la ubicación usando IA
+    location_description_key = f"location_description_{current_loc_id}"
+    
+    if location_description_key not in game_state:
+        # Generar nueva descripción usando IA
+        location_context = f"{current_loc_id} - {scenario_data.get('description_id', 'ubicación misteriosa')}"
+        print("Generando descripción de la ubicación...")
+        
+        try:
+            location_desc = generate_location_description(location_context)
+            game_state[location_description_key] = location_desc
+        except Exception as e:
+            print(f"Error generando descripción: {e}")
+            # Usar descripción de fallback
+            from .ai_connector import LocationDescription
+            location_desc = LocationDescription(
+                description=f"Te encuentras en {current_loc_id.replace('_', ' ')}. La atmósfera es misteriosa."
+            )
+            game_state[location_description_key] = location_desc
+    else:
+        # Usar descripción ya generada
+        location_desc = game_state[location_description_key]
+    
+    # Mostrar descripción detallada (sin ASCII art)
+    print(location_desc.description)
 
     print("\nOptions:")
     options_map = {} # To map the option number to its destination ID
