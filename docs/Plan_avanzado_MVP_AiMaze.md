@@ -384,6 +384,148 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
 
 Este será un documento Markdown independiente que abordará las herramientas y los pasos necesarios para hacer que el juego sea accesible para otros, incluyendo manejo de sesiones, persistencia con Supabase, una interfaz web gráfica (simulando texto), contenerización y despliegue en Google Cloud. Este plan se abordará una vez que el MVP local esté funcional y probado con la nueva arquitectura de coordenadas.
 
+## **6. Fase 3: Optimización de Experiencia de Usuario**
+
+### **Objetivo de la Fase 3:**
+
+Mejorar la experiencia del jugador mediante la optimización del cache de contenido generado por IA y la implementación de un sistema de opciones de usuario más avanzado.
+
+### **Paso 3.1: Cache de Descripciones de Habitaciones**
+
+**Objetivo:** Evitar regeneración innecesaria de descripciones y mantener consistencia narrativa.
+
+**Problema Identificado:**
+
+* Las descripciones se regeneran cada vez que el jugador visita una habitación
+* Inconsistencias narrativas (ej. "hay una ventana" vs "habitación cerrada")
+* Costo computacional innecesario en llamadas a la IA
+
+**Acciones:**
+
+1. **Modificar Room Model en src/aimaze/dungeon.py:**
+   * Añadir campo `cached_description: Optional[str] = None`
+   * Añadir campo `description_generated: bool = False`
+   * Añadir timestamp `description_timestamp: Optional[datetime] = None`
+
+2. **Implementar Cache Logic en src/aimaze/ai_connector.py:**
+   * Modificar `generate_location_description()` para verificar cache
+   * Solo generar nueva descripción si `cached_description` es None
+   * Almacenar resultado en `room.cached_description`
+
+3. **Actualizar display.py:**
+   * Usar `room.cached_description` si existe
+   * Fallback a generación solo si cache está vacío
+
+**Tests:**
+
+* Verificar que descripciones se cachean correctamente
+* Confirmar que no se regeneran en visitas subsecuentes
+* Validar consistencia entre visitas
+
+### **Paso 3.2: Sistema de Opciones de Usuario Avanzadas**
+
+**Objetivo:** Implementar opciones contextuales más allá del simple movimiento.
+
+**Problema Identificado:**
+
+* Solo opciones de movimiento cardinal disponibles
+* Falta interacción con el entorno (examinar, buscar, usar)
+* Experiencia limitada para el jugador
+
+**Acciones:**
+
+1. **Extender Room Model en src/aimaze/dungeon.py:**
+   * Añadir campo `contextual_actions: List[str] = Field(default_factory=list)`
+   * Ejemplos: ["examinar_pared", "buscar_objetos", "tocar_estatua"]
+
+2. **Implementar Dynamic Actions en src/aimaze/ai_connector.py:**
+   * Nueva función `generate_contextual_actions(room_context: str) -> List[str]`
+   * IA genera acciones basadas en la descripción de la habitación
+
+3. **Actualizar display.py y actions.py:**
+   * Mostrar opciones de movimiento + opciones contextuales
+   * Procesar acciones contextuales con respuestas narrativas
+
+**Tests:**
+
+* Verificar generación de acciones contextuales
+* Confirmar que se muestran junto con opciones de movimiento
+* Validar procesamiento de acciones no-movimiento
+
+### **Paso 3.3: Sistema de Regeneración Inteligente**
+
+**Objetivo:** Permitir regeneración selectiva de contenido cuando sea apropiado.
+
+**Acciones:**
+
+1. **Condiciones de Regeneración:**
+   * Cambios significativos en el estado del juego
+   * Eventos que modifiquen la habitación
+   * Comando explícito del jugador ("mirar de nuevo")
+
+2. **Implementar en ai_connector.py:**
+   * Función `should_regenerate_description(room: Room, game_state: dict) -> bool`
+   * Lógica para determinar cuándo regenerar
+
+3. **Comando de Usuario:**
+   * Añadir opción "Mirar detenidamente" que fuerce regeneración
+   * Útil para obtener perspectivas diferentes
+
+## **7. Fase 4: Expansión de Contenido Dinámico**
+
+### **Objetivo de la Fase 4:**
+
+Expandir las capacidades de generación de contenido dinámico y mejorar la narrativa.
+
+### **Paso 4.1: Objetos Interactivos Generados por IA**
+
+**Objetivo:** Generar objetos y elementos interactivos dinámicamente.
+
+**Acciones:**
+
+1. **Nuevo modelo InteractiveObject:**
+   * `id: str`, `name: str`, `description: str`
+   * `interaction_type: Literal['examine', 'take', 'use', 'trigger']`
+   * `interaction_result: str`
+
+2. **Integración con Room:**
+   * Campo `interactive_objects: List[InteractiveObject]`
+   * Generación dinámica basada en contexto
+
+### **Paso 4.2: Narrativa Adaptativa**
+
+**Objetivo:** Adaptar descripciones y eventos basados en el historial del jugador.
+
+**Acciones:**
+
+1. **Player History Tracking:**
+   * `visited_rooms: List[str]`
+   * `completed_actions: List[str]`
+   * `player_preferences: Dict[str, Any]`
+
+2. **Context-Aware Generation:**
+   * Modificar prompts para incluir historial
+   * Descripciones que referencien acciones pasadas
+
+## **8. Consideraciones de Implementación**
+
+### **8.1. Orden de Implementación**
+
+1. **Completar Fase 1 (MVP Básico)** - Prioridad Alta
+2. **Fase 2 (Distribución)** - Prioridad Alta
+3. **Fase 3 (Optimización UX)** - Prioridad Media
+4. **Fase 4 (Contenido Dinámico)** - Prioridad Media
+
+### **8.2. Métricas de Éxito**
+
+* **Fase 3:** Reducción del 80% en llamadas redundantes a IA, incremento en opciones disponibles por habitación
+* **Fase 4:** Mayor variedad en descripciones, retroalimentación positiva sobre narrativa adaptativa
+
+### **8.3. Backward Compatibility**
+
+* Todas las mejoras deben mantener compatibilidad con save games existentes
+* Migrations automáticas para nuevos campos en modelos Pydantic
+
 ---
 
-**Este plan detallado con la nueva arquitectura de coordenadas nos guiará a través del desarrollo del MVP. La implementación de coordenadas en el Paso 1.4 es crítica y debe realizarse antes de continuar con funcionalidades más avanzadas para evitar refactoring costoso posterior.**
+**Estas fases de mejora se implementarán después de completar el MVP básico funcional. Las mejoras están diseñadas para ser iterativas y no bloquear el desarrollo del núcleo del juego.**
