@@ -55,8 +55,9 @@ REQUISITOS IMPORTANTES:
 - NO incluyas ASCII art en la descripción
 - NO incluyas detalles específicos de eventos, monstruos o trampas
 - Enfócate en el ambiente general, la atmósfera y elementos visuales permanentes
-- La descripción debe ser inmersiva y apropiada para una mazmorra misteriosa
-- Describe el entorno, la iluminación, los sonidos ambiente, olores, y sensaciones generales
+- La descripción debe ser apropiada para una mazmorra misteriosa, centrate en el terror y el humor.
+- Describe el entorno, la iluminación, los sonidos ambiente, olores, o sensaciones generales.
+- Utiliza 3 frases como máximo.
 
 {format_instructions}""",
         input_variables=["location_context"],

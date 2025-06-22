@@ -12,6 +12,7 @@ Este documento detalla el plan de trabajo paso a paso para el desarrollo del Pro
 * **Enfoque en Enigmas:** El corazón de los quests serán los enigmas mentales, más que el combate puro.  
 * **Persistencia:** El estado del juego y de la mazmorra se mantendrá persistente para la coherencia y la reanudación de partidas.  
 * **Idioma:** Se preparará el sistema para la futura internacionalización desde el principio.
+* **Arquitectura de Coordenadas:** Cada nivel es una matriz de n x m habitaciones. La ubicación del jugador se define por coordenadas (nivel:x:y). Cada nivel tiene coordenadas de inicio y salida definidas. La mazmorra tiene coordenadas de inicio y salida definidas.
 
 ## **2. Estructura de Módulos del Proyecto**
 
@@ -22,12 +23,12 @@ src/aimaze/
 ├── main.py             # Bucle principal del juego y orquestador  
 ├── config.py           # Carga de variables de entorno (API keys, etc.)  
 ├── game_state.py       # Gestión del estado global y actual de la partida en memoria  
-├── display.py          # Gestión de toda la salida de información al usuario (texto, ASCII art, opciones)  
+├── display.py          # Gestión de toda la salida de información al usuario (texto, opciones)  
 ├── input.py            # Captura y validación de la entrada del usuario  
 ├── actions.py          # Procesa las acciones del jugador, delega a otros módulos para ejecutar consecuencias  
-├── dungeon.py          # Lógica de la estructura de la mazmorra, generación de niveles y habitaciones  
+├── dungeon.py          # Lógica de la estructura de la mazmorra, generación de niveles y habitaciones con coordenadas  
 ├── ai_connector.py     # Interfaz con la IA (LLM), gestiona prompts, parsers, callbacks (Langfuse)  
-├── events.py           # Definición, generación y resolución de eventos (trampas, encuentros, situaciones)  
+├── events.py           # Definición, generación y resolución de eventos (trampas, encuentros, situaciones) - INCLUYE ASCII ART  
 ├── player.py           # Gestión de atributos del jugador, inventario, habilidades, experiencia  
 ├── quest_manager.py    # Gestión de misiones (principal y secundarias), seguimiento de progreso de enigmas  
 ├── characters.py       # Definición y lógica de Monstruos y NPCs (características, comportamientos)  
@@ -38,7 +39,7 @@ src/aimaze/
 
 ### **Objetivo de la Fase:**
 
-Desarrollar un juego de texto interactivo funcional en la terminal, donde la mazmorra y las descripciones son generadas por IA, el jugador puede moverse y resolver eventos simples, y se puede guardar/cargar la partida.
+Desarrollar un juego de texto interactivo funcional en la terminal, donde la mazmorra y las descripciones son generadas por IA, el jugador puede moverse por coordenadas en múltiples niveles, resolver eventos simples, y se puede guardar/cargar la partida.
 
 ### **Paso 1.1: Configuración del Entorno y Estructura Modular Base**
 
@@ -138,71 +139,81 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
      * Crea un test para display.display_scenario que use unittest.mock.patch para simular la llamada a ai_connector.generate_location_description. El mock debe devolver una LocationDescription predefinida sin ASCII art.  
      * Verifica que display_scenario intenta imprimir la descripción mockeada."
 
-### **Paso 1.4: Generación de Estructura de Mazmorra con Puertas (dungeon.py, ai_connector.py)**
+### **Paso 1.4: Arquitectura de Coordenadas Multi-Nivel (dungeon.py, ai_connector.py, game_state.py)**
 
-**Objetivo:** La IA genera la estructura de la mazmorra (habitaciones, conexiones y la presencia/dirección de puertas).
+**Objetivo:** Implementar el sistema de coordenadas por nivel donde cada nivel es una matriz n x m, con coordenadas de inicio y salida definidas, y identificación de ubicación por coordenadas (nivel:x:y).
 
 **Acciones:**
 
-1. **Modelos Room y DungeonLayout en src/aimaze/dungeon.py:**  
+1. **Nuevos Modelos de Coordenadas en src/aimaze/dungeon.py:**  
    * Prompt para la IA integrada en el IDE:  
-     "Modifica src/aimaze/dungeon.py.  
-     * Importa BaseModel, Field, Dict, List de pydantic y typing.  
-     * Define un Pydantic BaseModel Room con: id: str, connections: Dict[str, str] (ej. {'north': 'room_b', 'east': 'room_c'}). Las claves del diccionario connections deben ser direcciones cardinales ('north', 'south', 'east', 'west') que indiquen la existencia de una puerta/pasaje en esa dirección.  
-     * Define un Pydantic BaseModel DungeonLayout con: rooms: Dict[str, Room].  
-     * Mueve la simulated_dungeon_layout existente dentro de una función get_placeholder_dungeon_layout() para que pueda ser referenciada o reemplazada."  
+     "Reemplaza completamente src/aimaze/dungeon.py con la nueva arquitectura de coordenadas.  
+     * Importa BaseModel, Field, Dict, List, Tuple, Optional de pydantic y typing.  
+     * Define PlayerLocation(BaseModel): level: int, x: int, y: int con método to_string() -> str que devuelva 'nivel:x:y'.  
+     * Define Room(BaseModel): id: str, coordinates: Tuple[int, int], connections: Dict[str, Tuple[int, int]] donde las claves son direcciones ('north', 'south', 'east', 'west') y los valores son coordenadas (x, y) de habitaciones adyacentes dentro del mismo nivel.  
+     * Define Level(BaseModel): id: int, width: int, height: int, start_coords: Tuple[int, int], exit_coords: Tuple[int, int], rooms: Dict[str, Room] donde la clave es 'x,y'.  
+     * Define Dungeon(BaseModel): total_levels: int, current_level: int = 1, levels: Dict[int, Level].  
+     * Añade función helper get_room_at_coords(level: Level, x: int, y: int) -> Optional[Room]."  
 2. **Función generate_dungeon_layout en src/aimaze/ai_connector.py:**  
    * Prompt para la IA integrada en el IDE:  
-     "Añade a src/aimaze/ai_connector.py una nueva función generate_dungeon_layout() -> DungeonLayout: que:  
-     * Use ChatOpenAI y un PromptTemplate para pedir a la IA que genere una *pequeña* mazmorra lineal (ej. 3-5 habitaciones conectadas) en formato JSON, adhiriéndose a la estructura de Room y DungeonLayout.  
-     * Enfatiza que las connections de cada Room deben usar direcciones cardinales ('north', 'south', 'east', 'west') para indicar las puertas existentes y su destino.  
-     * Asegúrate de que la mazmorra tenga un punto de inicio y una salida clara.  
+     "Reemplaza la función generate_dungeon_layout en src/aimaze/ai_connector.py para trabajar con la nueva arquitectura:  
+     * La función debe devolver Dungeon (no DungeonLayout).  
+     * Use ChatOpenAI y PromptTemplate para pedir a la IA que genere una pequeña mazmorra de UN SOLO NIVEL inicialmente (ej. 3x3 o 4x3), usando coordenadas específicas.  
+     * La IA debe especificar claramente start_coords y exit_coords para el nivel.  
+     * Cada Room debe tener coordinates y connections que referencien otras coordenadas válidas dentro del nivel.  
      * Utiliza PydanticOutputParser y OutputFixingParser para validar la salida."  
-3. **Integrar Generación en src/aimaze/game_state.py:**  
+3. **Actualizar game_state.py para PlayerLocation:**  
    * Prompt para la IA integrada en el IDE:  
-     "Modifica src/aimaze/game_state.py.  
-     * Importa generate_dungeon_layout de src/aimaze/ai_connector.py.  
-     * En initialize_game_state(), reemplaza la simulated_dungeon_layout por una llamada a ai_connector.generate_dungeon_layout(). Almacena el resultado (un objeto DungeonLayout) en game_state["dungeon_layout"].  
-     * Asegúrate de que player_location_id se inicialice con el ID de la habitación de inicio generada por la IA."
+     "Modifica src/aimaze/game_state.py para usar PlayerLocation:  
+     * Importa PlayerLocation y Dungeon de src/aimaze/dungeon.py.  
+     * Reemplaza player_location_id con player_location: PlayerLocation.  
+     * En initialize_game_state(), llama a generate_dungeon_layout() y almacena el resultado como game_state['dungeon'].  
+     * Inicializa game_state['player_location'] con las start_coords del nivel 1 del dungeon generado.  
+     * Elimina referencias a simulated_dungeon_layout."
 
 **Validación de IA (Paso 1.4):**
 
-1. **Conectividad y Linealidad:**  
+1. **Conectividad y Coordenadas:**  
    * Prompt para la IA integrada en el IDE:  
-     "Genera una mazmorra de ejemplo usando ai_connector.generate_dungeon_layout(). Verifica manualmente: ¿Todas las habitaciones son accesibles desde el inicio? ¿Existe un camino claro hacia la salida? ¿Las connections usan direcciones cardinales? ¿La estructura es razonablemente lineal como se pidió para el MVP?"
+     "Genera una mazmorra de ejemplo usando ai_connector.generate_dungeon_layout(). Verifica manualmente: ¿Las coordenadas de las habitaciones están dentro de los límites del nivel? ¿Las connections apuntan a coordenadas válidas? ¿start_coords y exit_coords están especificadas correctamente?"
 
 **Tests (Paso 1.4):**
 
-1. **Test de dungeon y ai_connector:**  
+1. **Test de nuevos modelos en dungeon.py:**  
    * Prompt para la IA integrada en el IDE:  
-     "Crea un archivo de test tests/test_dungeon_generation.py.  
-     * Crea un test para ai_connector.generate_dungeon_layout que use unittest.mock.patch para simular la respuesta del LLM (devolviendo un JSON que represente una DungeonLayout válida con conexiones cardinales).  
-     * Verifica que la función devuelve una instancia de DungeonLayout y que su estructura básica es correcta (contiene las habitaciones esperadas y conexiones válidas)."
+     "Crea un archivo de test tests/test_dungeon_coordinates.py.  
+     * Test PlayerLocation.to_string() devuelve formato correcto 'nivel:x:y'.  
+     * Test get_room_at_coords() encuentra habitaciones por coordenadas correctamente.  
+     * Test para ai_connector.generate_dungeon_layout que mock la respuesta del LLM y verifique que devuelve una instancia Dungeon válida con coordenadas consistentes."
 
-### **Paso 1.5: Opciones Dinámicas y Proceso de Acción (display.py, actions.py)**
+### **Paso 1.5: Opciones Dinámicas basadas en Coordenadas (display.py, actions.py)**
 
-**Objetivo:** Las opciones del jugador se basan en la estructura de la mazmorra generada, y las acciones actualizan la ubicación del jugador.
+**Objetivo:** Las opciones del jugador se basan en las connections de la habitación actual usando coordenadas, y las acciones actualizan PlayerLocation correctamente.
 
 **Acciones:**
 
 1. **Modificar src/aimaze/display.py:**  
    * Prompt para la IA integrada en el IDE:  
-     "Modifica src/aimaze/display.py.  
-     * Ajusta display_scenario para que las opciones mostradas y almacenadas en game_state["current_options_map"] se deriven directamente de las connections de la Room actual en game_state["dungeon_layout"].  
-     * Las descripciones de las opciones deben ser claras, utilizando las direcciones cardinales (ej. 'Ir al Norte', 'Ir al Este', 'Salir')."  
+     "Actualiza completamente src/aimaze/display.py para trabajar con coordenadas:  
+     * La función display_scenario debe obtener la habitación actual usando game_state['player_location'] y game_state['dungeon'].  
+     * Usar get_room_at_coords() para obtener la Room actual.  
+     * Las opciones mostradas deben derivarse de room.connections (direcciones cardinales disponibles).  
+     * El contexto para generate_location_description debe incluir las coordenadas: 'Level {nivel} at ({x},{y})'."  
 2. **Modificar src/aimaze/actions.py:**  
    * Prompt para la IA integrada en el IDE:  
-     "Modifica src/aimaze/actions.py.  
-     * Ajusta process_player_action para que la validación de la elección y el cambio de player_location_id se basen en las connections de la Room actual de game_state["dungeon_layout"].  
-     * Asegúrate de que se maneje la condición de "salir_mazmorra" para establecer objective_achieved = True."
+     "Actualiza src/aimaze/actions.py para manejar PlayerLocation:  
+     * process_player_action debe validar que la dirección elegida existe en room.connections.  
+     * Al moverse, actualizar game_state['player_location'] con las nuevas coordenadas del connections.  
+     * Verificar si las nuevas coordenadas son exit_coords del nivel actual para establecer objective_achieved = True.  
+     * Añadir validación de límites (coordenadas dentro de level.width y level.height)."
 
 **Tests (Paso 1.5):**
 
-1. **Test de display y actions:**  
+1. **Test de display y actions con coordenadas:**  
    * Prompt para la IA integrada en el IDE:  
-     "Actualiza tests/test_display.py y tests/test_actions.py.  
-     * En test_display.py, configura un game_state con una dungeon_layout mockeada y verifica que display_scenario muestra las opciones correctas basadas en las conexiones de la habitación actual (direcciones cardinales).  
-     * En test_actions.py, verifica que process_player_action maneja correctamente las transiciones de ubicación basadas en las conexiones de la mazmorra generada y que la condición de salida se activa correctamente."
+     "Actualiza tests/test_display.py y crea tests/test_actions_coordinates.py:  
+     * En test_display.py, mockea un game_state con Dungeon y PlayerLocation válidos, verifica que display_scenario muestra opciones basadas en coordenadas.  
+     * En test_actions_coordinates.py, verifica que process_player_action actualiza correctamente PlayerLocation y detecta condiciones de salida basadas en exit_coords."
 
 ### **Paso 1.6: Gestión de Eventos con ASCII Art y Narrativa (events.py, ai_connector.py, actions.py, display.py)**
 
@@ -341,8 +352,38 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
      "Crea un archivo de test tests/test_localization.py.  
      * Crea tests para verificar que LocalizationManager puede establecer el idioma y recuperar textos correctamente para diferentes idiomas y claves."
 
-## **4. Fase 2: Plan de Distribución del MVP**
+## **4. Puntos Clave de la Nueva Arquitectura**
 
-Este será un documento Markdown independiente que abordará las herramientas y los pasos necesarios para hacer que el juego sea accesible para otros, incluyendo manejo de sesiones, persistencia con Supabase, una interfaz web gráfica (simulando texto), contenerización y despliegue en Google Cloud. Este plan se abordará una vez que el MVP local esté funcional y probado.
+### **4.1. Sistema de Coordenadas**
 
-Este plan detallado nos guiará a través del desarrollo del MVP con las nuevas especificaciones. Estoy listo para que empecemos con el **Paso 1.1** o cualquier otra modificación que desees hacer.
+- **PlayerLocation:** Identifica la posición como (nivel:x:y)
+- **Level:** Matriz n x m con coordenadas de inicio y salida explícitas
+- **Dungeon:** Colección de niveles con navegación multi-nivel
+- **Room:** Coordenadas específicas dentro de un nivel con connections a coordenadas adyacentes
+
+### **4.2. Separación de Contenido Visual**
+
+- **LocationDescription:** Solo descripción textual, sin ASCII art
+- **GameEvent:** Incluye ASCII art cuando es relevante (monstruos, trampas, efectos)
+- **Display Logic:** Maneja ambos tipos de contenido apropiadamente
+
+### **4.3. Escalabilidad**
+
+- **Multi-nivel:** Preparado para múltiples niveles de mazmorra
+- **Coordenadas flexibles:** Cada nivel puede tener dimensiones diferentes
+- **Navegación consistente:** Sistema unificado de movimiento por coordenadas
+
+### **4.4. Cambios Críticos vs Implementación Actual**
+
+- **ELIMINADO:** `player_location_id` → **NUEVO:** `PlayerLocation(level, x, y)`
+- **ELIMINADO:** `simulated_dungeon_layout` → **NUEVO:** `Dungeon` con `Level` y coordenadas
+- **ELIMINADO:** `ascii_art` en `LocationDescription` → **MOVIDO:** a `GameEvent` cuando sea apropiado
+- **ACTUALIZADO:** Toda la lógica de navegación para usar coordenadas
+
+## **5. Fase 2: Plan de Distribución del MVP**
+
+Este será un documento Markdown independiente que abordará las herramientas y los pasos necesarios para hacer que el juego sea accesible para otros, incluyendo manejo de sesiones, persistencia con Supabase, una interfaz web gráfica (simulando texto), contenerización y despliegue en Google Cloud. Este plan se abordará una vez que el MVP local esté funcional y probado con la nueva arquitectura de coordenadas.
+
+---
+
+**Este plan detallado con la nueva arquitectura de coordenadas nos guiará a través del desarrollo del MVP. La implementación de coordenadas en el Paso 1.4 es crítica y debe realizarse antes de continuar con funcionalidades más avanzadas para evitar refactoring costoso posterior.**

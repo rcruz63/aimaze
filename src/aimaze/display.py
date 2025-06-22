@@ -1,6 +1,6 @@
 # src/aimaze/display.py
 
-from .ai_connector import generate_location_description
+from aimaze.ai_connector import generate_location_description
 
 
 def display_scenario(game_state):
