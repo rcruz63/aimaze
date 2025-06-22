@@ -1,4 +1,5 @@
 import os
+import random
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate, ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
@@ -93,92 +94,215 @@ REQUISITOS IMPORTANTES:
         )
 
 
+def generate_main_path(start: tuple, end: tuple, width: int, height: int) -> list:
+    """
+    Genera un camino principal desde start hasta end usando un algoritmo simple.
+    
+    Args:
+        start: Coordenadas de inicio (x, y)
+        end: Coordenadas de fin (x, y)
+        width: Ancho del nivel
+        height: Alto del nivel
+        
+    Returns:
+        Lista de coordenadas que forman el camino principal
+    """
+    path = [start]
+    current_x, current_y = start
+    
+    # Primero moverse horizontalmente hacia el objetivo
+    while current_x != end[0]:
+        if current_x < end[0]:
+            current_x += 1
+        else:
+            current_x -= 1
+        path.append((current_x, current_y))
+    
+    # Luego moverse verticalmente hacia el objetivo
+    while current_y != end[1]:
+        if current_y < end[1]:
+            current_y += 1
+        else:
+            current_y -= 1
+        path.append((current_x, current_y))
+    
+    return path
+
+
+def add_extra_rooms_and_connect(path_rooms: list, width: int, height: int) -> dict:
+    """
+    Añade habitaciones adicionales y las conecta al camino principal.
+    
+    Args:
+        path_rooms: Lista de coordenadas del camino principal
+        width: Ancho del nivel
+        height: Alto del nivel
+        
+    Returns:
+        Diccionario de habitaciones con sus conexiones
+    """
+    rooms = {}
+    
+    # Crear habitaciones del camino principal
+    for i, coords in enumerate(path_rooms):
+        room_id = f"room_{i+1}"
+        connections = {}
+        
+        # Conectar con habitaciones adyacentes del camino
+        if i > 0:  # Conectar con la anterior
+            prev_coords = path_rooms[i-1]
+            if prev_coords[0] < coords[0]:
+                connections['west'] = prev_coords
+            elif prev_coords[0] > coords[0]:
+                connections['east'] = prev_coords
+            elif prev_coords[1] < coords[1]:
+                connections['north'] = prev_coords
+            elif prev_coords[1] > coords[1]:
+                connections['south'] = prev_coords
+        
+        if i < len(path_rooms) - 1:  # Conectar con la siguiente
+            next_coords = path_rooms[i+1]
+            if next_coords[0] > coords[0]:
+                connections['east'] = next_coords
+            elif next_coords[0] < coords[0]:
+                connections['west'] = next_coords
+            elif next_coords[1] > coords[1]:
+                connections['south'] = next_coords
+            elif next_coords[1] < coords[1]:
+                connections['north'] = next_coords
+        
+        rooms[f"{coords[0]},{coords[1]}"] = Room(
+            id=room_id,
+            coordinates=coords,
+            connections=connections
+        )
+    
+    # Añadir habitaciones adicionales (80-100% del total de coordenadas posibles)
+    total_possible = width * height
+    target_rooms = random.randint(int(total_possible * 0.8), total_possible)
+    current_rooms = len(rooms)
+    
+    # Generar coordenadas adicionales
+    all_coords = [(x, y) for x in range(width) for y in range(height)]
+    available_coords = [coord for coord in all_coords if coord not in path_rooms]
+    
+    # Añadir habitaciones adicionales hasta alcanzar el objetivo
+    extra_rooms_needed = min(target_rooms - current_rooms, len(available_coords))
+    extra_coords = random.sample(available_coords, extra_rooms_needed)
+    
+    for i, coords in enumerate(extra_coords):
+        room_id = f"extra_room_{i+1}"
+        connections = {}
+        
+        # Conectar con habitaciones adyacentes existentes
+        x, y = coords
+        adjacent_coords = [
+            (x+1, y), (x-1, y), (x, y+1), (x, y-1)
+        ]
+        
+        for adj_x, adj_y in adjacent_coords:
+            if (0 <= adj_x < width and 0 <= adj_y < height and 
+                f"{adj_x},{adj_y}" in rooms):
+                # Determinar dirección
+                if adj_x > x:
+                    connections['east'] = (adj_x, adj_y)
+                elif adj_x < x:
+                    connections['west'] = (adj_x, adj_y)
+                elif adj_y > y:
+                    connections['south'] = (adj_x, adj_y)
+                elif adj_y < y:
+                    connections['north'] = (adj_x, adj_y)
+        
+        # Si no tiene conexiones, conectar con la habitación más cercana del camino
+        if not connections and path_rooms:
+            closest = min(path_rooms, key=lambda p: abs(p[0]-x) + abs(p[1]-y))
+            if closest[0] > x:
+                connections['east'] = closest
+            elif closest[0] < x:
+                connections['west'] = closest
+            elif closest[1] > y:
+                connections['south'] = closest
+            elif closest[1] < y:
+                connections['north'] = closest
+        
+        rooms[f"{coords[0]},{coords[1]}"] = Room(
+            id=room_id,
+            coordinates=coords,
+            connections=connections
+        )
+    
+    return rooms
+
+
+def create_dungeon_from_rooms(rooms: dict, width: int, height: int, 
+                             start_coords: tuple, exit_coords: tuple) -> Dungeon:
+    """
+    Crea un objeto Dungeon a partir de las habitaciones generadas.
+    
+    Args:
+        rooms: Diccionario de habitaciones
+        width: Ancho del nivel
+        height: Alto del nivel
+        start_coords: Coordenadas de inicio
+        exit_coords: Coordenadas de salida
+        
+    Returns:
+        Objeto Dungeon completo
+    """
+    level_1 = Level(
+        id=1,
+        width=width,
+        height=height,
+        start_coords=start_coords,
+        exit_coords=exit_coords,
+        rooms=rooms
+    )
+    
+    dungeon = Dungeon(
+        total_levels=1,
+        current_level=1,
+        levels={1: level_1}
+    )
+    
+    return dungeon
+
+
 def generate_dungeon_layout() -> Dungeon:
     """
-    Genera el layout de una mazmorra usando IA con la nueva arquitectura de coordenadas.
-    Inicialmente genera UN SOLO NIVEL pequeño (3x3 o 4x3).
+    Genera el layout de una mazmorra usando enfoque determinista.
+    Inicialmente genera UN SOLO NIVEL pequeño con estructura garantizada.
     
     Returns:
         Dungeon: Objeto con la estructura completa de la mazmorra
     """
-    # Configurar el modelo de IA
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0.7,
-        openai_api_key=os.getenv("OPENAI_API_KEY")
-    )
+    # Parámetros aleatorios controlados
+    width = random.randint(3, 5)
+    height = random.randint(3, 5)
     
-    # Configurar el parser de salida
-    parser = PydanticOutputParser(pydantic_object=Dungeon)
-    fixing_parser = OutputFixingParser.from_llm(parser=parser, llm=llm)
+    # Puntos fijos: entrada en (0,0), salida en esquina opuesta
+    start_coords = (0, 0)
+    exit_coords = (width - 1, height - 1)
     
-    # Configurar Langfuse callback para monitoreo
-    langfuse_handler = None
-    try:
-        if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
-            langfuse_handler = CallbackHandler()
-    except Exception as e:
-        print(f"Warning: No se pudo configurar Langfuse: {e}")
+    print(f"Generando mazmorra determinista: {width}x{height}")
+    print(f"Entrada: {start_coords}, Salida: {exit_coords}")
     
-    # Crear el prompt
-    prompt_template = PromptTemplate(
-        template="""Eres un maestro de mazmorras experto en diseñar layouts de mazmorras.
-
-Tu tarea es generar una pequeña mazmorra de UN SOLO NIVEL usando coordenadas específicas.
-
-ESPECIFICACIONES REQUERIDAS:
-- Crear un único nivel (id: 1) con dimensiones pequeñas (3x3 o 4x3)
-- Definir claramente start_coords y exit_coords para el nivel
-- Cada habitación debe tener coordenadas válidas dentro de los límites del nivel
-- Las connections de cada habitación deben referenciar coordenadas válidas de habitaciones adyacentes
-- Usar direcciones cardinales: 'north', 'south', 'east', 'west'
-- Asegurar que hay un camino válido desde start_coords hasta exit_coords
-- Los rooms deben usar la clave 'x,y' (ejemplo: '0,0', '1,2')
-
-EJEMPLO DE ESTRUCTURA:
-- Level 1: width=3, height=3, start_coords=(0,0), exit_coords=(2,2)
-- Room en (0,0): connections={'east': (1,0), 'south': (0,1)}
-- Room en (1,0): connections={'west': (0,0), 'east': (2,0)}
-- ... y así sucesivamente
-
-IMPORTANTE:
-- Todas las coordenadas deben estar dentro de los límites (0 <= x < width, 0 <= y < height)
-- Solo conectar habitaciones adyacentes (no conexiones en diagonal)
-- Crear un layout interesante pero simple para el MVP
-
-{format_instructions}""",
-        input_variables=[],
-        partial_variables={"format_instructions": parser.get_format_instructions()}
-    )
+    # Generar camino principal
+    path_rooms = generate_main_path(start_coords, exit_coords, width, height)
+    print(f"Camino principal: {len(path_rooms)} habitaciones")
     
-    # Ejecutar la cadena
-    callbacks = [langfuse_handler] if langfuse_handler else []
+    # Añadir habitaciones adicionales y conectarlas
+    all_rooms = add_extra_rooms_and_connect(path_rooms, width, height)
+    print(f"Total habitaciones: {len(all_rooms)}")
     
-    try:
-        # Formatear el prompt
-        formatted_prompt = prompt_template.format()
-        
-        # Generar respuesta
-        if callbacks:
-            config = {"callbacks": callbacks}
-            response = llm.invoke(formatted_prompt, config=config)
-        else:
-            response = llm.invoke(formatted_prompt)
-        
-        # Parsear la respuesta
-        result = fixing_parser.parse(response.content)
-        
-        return result
-        
-    except Exception as e:
-        print(f"Error generando layout de mazmorra: {e}")
-        # Fallback en caso de error - crear una mazmorra simple hardcodeada
-        return _create_fallback_dungeon()
+    # Crear y retornar la mazmorra
+    dungeon = create_dungeon_from_rooms(all_rooms, width, height, start_coords, exit_coords)
+    
+    return dungeon
 
 
 def _create_fallback_dungeon() -> Dungeon:
     """
-    Crea una mazmorra simple hardcodeada como fallback en caso de error de IA.
+    Crea una mazmorra simple hardcodeada como fallback en caso de error.
     """
     # Crear habitaciones
     rooms = {}
@@ -241,7 +365,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error en la prueba: {e}")
     
-    print("\n=== PRUEBA DE GENERACIÓN DE MAZMORRA ===")
+    print("\n=== PRUEBA DE GENERACIÓN DE MAZMORRA DETERMINISTA ===")
     try:
         dungeon = generate_dungeon_layout()
         print("\nMAZMORRA GENERADA:")

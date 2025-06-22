@@ -1,6 +1,7 @@
 # src/aimaze/game_state.py
 
-from aimaze.dungeon import get_simulated_dungeon_layout
+from aimaze.dungeon import PlayerLocation, Dungeon
+from aimaze.ai_connector import generate_dungeon_layout
 from aimaze.config import load_config
 from aimaze.player import Player
 
@@ -14,7 +15,7 @@ def initialize_game_state():
     load_config()
 
     game_state = {
-        "player_location_id": "inicio",  # ID of the player's current location
+        "player_location": None,  # Will be initialized with PlayerLocation
         "game_over": False,
         "objective_achieved": False,
         "player": Player()               # Initialize Player model
@@ -26,11 +27,14 @@ def initialize_game_state():
     print("  - Define the main objective of the game for this specific run.")
     print("  - Store the dungeon structure and its elements in 'game_state'.")
 
-    # --- BASIC DUNGEON SIMULATION FOR THE SKELETON ---
-    # This simulates a linear dungeon so the skeleton is executable.
-    # Later, this will be generated and managed by the AI.
-    game_state["simulated_dungeon_layout"] = get_simulated_dungeon_layout()
-    # End of simulation. The real AI would replace this.
-    # --- END SIMULATION ---
+    # --- GENERATE DUNGEON USING AI ---
+    # Generate dungeon layout using AI
+    game_state["dungeon"] = generate_dungeon_layout()
+    
+    # Initialize player location with start coordinates of level 1
+    level_1 = game_state["dungeon"].levels[1]
+    start_x, start_y = level_1.start_coords
+    game_state["player_location"] = PlayerLocation(level=1, x=start_x, y=start_y)
+    # --- END AI GENERATION ---
 
     return game_state

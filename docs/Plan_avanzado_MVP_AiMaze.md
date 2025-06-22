@@ -14,6 +14,44 @@ Este documento detalla el plan de trabajo paso a paso para el desarrollo del Pro
 * **Idioma:** Se preparará el sistema para la futura internacionalización desde el principio.
 * **Arquitectura de Coordenadas:** Cada nivel es una matriz de n x m habitaciones. La ubicación del jugador se define por coordenadas (nivel:x:y). Cada nivel tiene coordenadas de inicio y salida definidas. La mazmorra tiene coordenadas de inicio y salida definidas.
 
+## **1.1. Cambio Estratégico: Enfoque Híbrido Determinista**
+
+**Problema Identificado:** Durante el desarrollo del Paso 1.4, se detectó que la generación completa de mazmorras por IA presentaba problemas de consistencia y debugging complejo. El error `KeyError: "'east'"` reveló que la IA no siempre genera estructuras JSON válidas para la lógica estructural.
+
+**Solución Implementada:** Separación de responsabilidades entre **estructura determinista** y **creatividad narrativa**.
+
+### **Enfoque Híbrido:**
+
+**🔄 Generación Estructural (Determinista):**
+- **Algoritmos deterministas** para crear la estructura de la mazmorra
+- **Parámetros aleatorios controlados** (tamaño, densidad de habitaciones)
+- **Pathfinding garantizado** desde entrada hasta salida
+- **Validación automática** de coordenadas y conectividad
+- **Sin dependencia de IA** para la lógica estructural
+
+**🎨 Creatividad Narrativa (IA):**
+- **Descripciones de habitaciones** generadas por IA
+- **Eventos y encuentros** dinámicos y contextuales
+- **ASCII art** para elementos visuales
+- **Narrativa adaptativa** basada en el contexto del jugador
+- **Enigmas y diálogos** generados por IA
+
+### **Ventajas del Enfoque Híbrido:**
+
+✅ **Confiabilidad:** La mazmorra siempre será navegable y funcional  
+✅ **Debugging:** Separación clara entre problemas estructurales y de IA  
+✅ **Escalabilidad:** Fácil extensión a múltiples niveles y configuraciones  
+✅ **Consistencia:** Coordenadas y conexiones siempre válidas  
+✅ **Creatividad:** La IA se enfoca en lo que hace mejor (narrativa)  
+✅ **Rendimiento:** Menos llamadas a IA para lógica estructural  
+
+### **Impacto en el Plan:**
+
+- **Paso 1.4 actualizado** para usar `generate_deterministic_dungeon_layout()`
+- **Pasos 1.3, 1.6, 1.8** mantienen el uso de IA para contenido narrativo
+- **Tests actualizados** para validar estructura determinista
+- **Validación mejorada** con múltiples ejecuciones de prueba
+
 ## **2. Estructura de Módulos del Proyecto**
 
 El proyecto se organizará en el directorio src/aimaze/ con los siguientes módulos:
@@ -139,9 +177,15 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
      * Crea un test para display.display_scenario que use unittest.mock.patch para simular la llamada a ai_connector.generate_location_description. El mock debe devolver una LocationDescription predefinida sin ASCII art.  
      * Verifica que display_scenario intenta imprimir la descripción mockeada."
 
-### **Paso 1.4: Arquitectura de Coordenadas Multi-Nivel (dungeon.py, ai_connector.py, game_state.py)**
+### **Paso 1.4: Arquitectura de Coordenadas Multi-Nivel con Generación Determinista (dungeon.py, ai_connector.py, game_state.py)**
 
-**Objetivo:** Implementar el sistema de coordenadas por nivel donde cada nivel es una matriz n x m, con coordenadas de inicio y salida definidas, y identificación de ubicación por coordenadas (nivel:x:y).
+**Objetivo:** Implementar el sistema de coordenadas por nivel donde cada nivel es una matriz n x m, con coordenadas de inicio y salida definidas, y identificación de ubicación por coordenadas (nivel:x:y). **NUEVO ENFOQUE:** Separar la generación estructural (determinista) de la creatividad narrativa (IA).
+
+**Filosofía del Nuevo Enfoque:**
+- **Estructura determinista:** La mazmorra siempre será navegable y funcional
+- **Creatividad controlada:** La IA se enfoca en narrativa, descripciones y eventos
+- **Debugging más fácil:** Separación clara entre problemas estructurales y de IA
+- **Escalabilidad:** Fácil extensión a múltiples niveles y configuraciones
 
 **Acciones:**
 
@@ -154,37 +198,53 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
      * Define Level(BaseModel): id: int, width: int, height: int, start_coords: Tuple[int, int], exit_coords: Tuple[int, int], rooms: Dict[str, Room] donde la clave es 'x,y'.  
      * Define Dungeon(BaseModel): total_levels: int, current_level: int = 1, levels: Dict[int, Level].  
      * Añade función helper get_room_at_coords(level: Level, x: int, y: int) -> Optional[Room]."  
+
 2. **Función generate_dungeon_layout en src/aimaze/ai_connector.py:**  
    * Prompt para la IA integrada en el IDE:  
-     "Reemplaza la función generate_dungeon_layout en src/aimaze/ai_connector.py para trabajar con la nueva arquitectura:  
-     * La función debe devolver Dungeon (no DungeonLayout).  
-     * Use ChatOpenAI y PromptTemplate para pedir a la IA que genere una pequeña mazmorra de UN SOLO NIVEL inicialmente (ej. 3x3 o 4x3), usando coordenadas específicas.  
-     * La IA debe especificar claramente start_coords y exit_coords para el nivel.  
-     * Cada Room debe tener coordinates y connections que referencien otras coordenadas válidas dentro del nivel.  
-     * Utiliza PydanticOutputParser y OutputFixingParser para validar la salida."  
+     "Reemplaza la función generate_dungeon_layout en src/aimaze/ai_connector.py con una nueva función generate_dungeon_layout():  
+     * **ENFOQUE DETERMINISTA:** Genera estructura de mazmorra sin usar IA para la lógica estructural.  
+     * **Parámetros aleatorios controlados:** width = random.randint(3, 5), height = random.randint(3, 5).  
+     * **Puntos fijos:** start_coords = (0, 0), exit_coords = (width-1, height-1).  
+     * **Camino principal:** Genera un camino válido desde entrada hasta salida usando algoritmo de pathfinding simple.  
+     * **Habitaciones adicionales:** Añade habitaciones extra (80-100% del total) y las conecta al camino principal.  
+     * **Conexiones válidas:** Todas las connections apuntan a coordenadas válidas y habitaciones existentes.  
+     * **Sin IA:** No uses ChatOpenAI ni prompts para la estructura, solo para descripciones/eventos.  
+     * **Función helper:** Implementa generate_main_path(start, end, width, height) -> List[Tuple[int, int]].  
+     * **Función helper:** Implementa add_extra_rooms_and_connect(path_rooms, width, height) -> Dict[str, Room].  
+     * **Función helper:** Implementa create_dungeon_from_rooms(rooms, width, height, start, exit) -> Dungeon."  
+
 3. **Actualizar game_state.py para PlayerLocation:**  
    * Prompt para la IA integrada en el IDE:  
      "Modifica src/aimaze/game_state.py para usar PlayerLocation:  
      * Importa PlayerLocation y Dungeon de src/aimaze/dungeon.py.  
      * Reemplaza player_location_id con player_location: PlayerLocation.  
-     * En initialize_game_state(), llama a generate_dungeon_layout() y almacena el resultado como game_state['dungeon'].  
+     * En initialize_game_state(), llama a generate_deterministic_dungeon_layout() y almacena el resultado como game_state['dungeon'].  
      * Inicializa game_state['player_location'] con las start_coords del nivel 1 del dungeon generado.  
      * Elimina referencias a simulated_dungeon_layout."
 
-**Validación de IA (Paso 1.4):**
+**Validación de Estructura Determinista (Paso 1.4):**
 
 1. **Conectividad y Coordenadas:**  
    * Prompt para la IA integrada en el IDE:  
-     "Genera una mazmorra de ejemplo usando ai_connector.generate_dungeon_layout(). Verifica manualmente: ¿Las coordenadas de las habitaciones están dentro de los límites del nivel? ¿Las connections apuntan a coordenadas válidas? ¿start_coords y exit_coords están especificadas correctamente?"
+     "Genera múltiples mazmorras usando generate_deterministic_dungeon_layout(). Verifica manualmente: ¿Las coordenadas están siempre dentro de límites? ¿Las connections apuntan siempre a coordenadas válidas? ¿Existe siempre un camino desde start_coords hasta exit_coords? ¿La estructura es consistente y navegable?"
 
 **Tests (Paso 1.4):**
 
-1. **Test de nuevos modelos en dungeon.py:**  
+1. **Test de generación determinista:**  
+   * Prompt para la IA integrada en el IDE:  
+     "Crea un archivo de test tests/test_dungeon_deterministic.py.  
+     * Test que generate_deterministic_dungeon_layout() siempre devuelve una Dungeon válida.  
+     * Test que verifica conectividad completa (todas las habitaciones alcanzables).  
+     * Test que valida coordenadas dentro de límites para múltiples ejecuciones.  
+     * Test que confirma que start_coords y exit_coords están correctamente definidas.  
+     * Test que verifica que el camino principal existe y es navegable."  
+
+2. **Test de nuevos modelos en dungeon.py:**  
    * Prompt para la IA integrada en el IDE:  
      "Crea un archivo de test tests/test_dungeon_coordinates.py.  
      * Test PlayerLocation.to_string() devuelve formato correcto 'nivel:x:y'.  
      * Test get_room_at_coords() encuentra habitaciones por coordenadas correctamente.  
-     * Test para ai_connector.generate_dungeon_layout que mock la respuesta del LLM y verifique que devuelve una instancia Dungeon válida con coordenadas consistentes."
+     * Test para generate_deterministic_dungeon_layout que verifique que devuelve una instancia Dungeon válida con coordenadas consistentes."
 
 ### **Paso 1.5: Opciones Dinámicas basadas en Coordenadas (display.py, actions.py)**
 
