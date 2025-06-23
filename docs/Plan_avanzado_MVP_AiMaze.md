@@ -23,18 +23,20 @@ Este documento detalla el plan de trabajo paso a paso para el desarrollo del Pro
 ### **Enfoque Híbrido:**
 
 **🔄 Generación Estructural (Determinista):**
-- **Algoritmos deterministas** para crear la estructura de la mazmorra
-- **Parámetros aleatorios controlados** (tamaño, densidad de habitaciones)
-- **Pathfinding garantizado** desde entrada hasta salida
-- **Validación automática** de coordenadas y conectividad
-- **Sin dependencia de IA** para la lógica estructural
+
+* **Algoritmos deterministas** para crear la estructura de la mazmorra
+* **Parámetros aleatorios controlados** (tamaño, densidad de habitaciones)
+* **Pathfinding garantizado** desde entrada hasta salida
+* **Validación automática** de coordenadas y conectividad
+* **Sin dependencia de IA** para la lógica estructural
 
 **🎨 Creatividad Narrativa (IA):**
-- **Descripciones de habitaciones** generadas por IA
-- **Eventos y encuentros** dinámicos y contextuales
-- **ASCII art** para elementos visuales
-- **Narrativa adaptativa** basada en el contexto del jugador
-- **Enigmas y diálogos** generados por IA
+
+* **Descripciones de habitaciones** generadas por IA
+* **Eventos y encuentros** dinámicos y contextuales
+* **ASCII art** para elementos visuales
+* **Narrativa adaptativa** basada en el contexto del jugador
+* **Enigmas y diálogos** generados por IA
 
 ### **Ventajas del Enfoque Híbrido:**
 
@@ -47,17 +49,17 @@ Este documento detalla el plan de trabajo paso a paso para el desarrollo del Pro
 
 ### **Impacto en el Plan:**
 
-- **Paso 1.4 actualizado** para usar `generate_deterministic_dungeon_layout()`
-- **Pasos 1.3, 1.6, 1.8** mantienen el uso de IA para contenido narrativo
-- **Tests actualizados** para validar estructura determinista
-- **Validación mejorada** con múltiples ejecuciones de prueba
+* **Paso 1.4 actualizado** para usar `generate_dungeon_layout()`
+* **Pasos 1.3, 1.6, 1.8** mantienen el uso de IA para contenido narrativo
+* **Tests actualizados** para validar estructura determinista
+* **Validación mejorada** con múltiples ejecuciones de prueba
 
 ## **2. Estructura de Módulos del Proyecto**
 
 El proyecto se organizará en el directorio src/aimaze/ con los siguientes módulos:
 
 src/aimaze/  
-├── __init__.py         # Marca el directorio como un paquete Python  
+├── \_\_init\_\_.py         # Marca el directorio como un paquete Python  
 ├── main.py             # Bucle principal del juego y orquestador  
 ├── config.py           # Carga de variables de entorno (API keys, etc.)  
 ├── game_state.py       # Gestión del estado global y actual de la partida en memoria  
@@ -86,9 +88,9 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
 **Acciones:**
 
 1. **Crear la estructura de directorios:** src/aimaze/ y tests/.  
-2. **Crear src/aimaze/__init__.py:** Archivo vacío para marcar como paquete.  
+2. **Crear src/aimaze/\_\_init\_\_.py:** Archivo vacío para marcar como paquete.  
    * Prompt para la IA integrada en el IDE:  
-     "Por favor, crea el archivo src/aimaze/__init__.py. Debe estar vacío."  
+     "Por favor, crea el archivo src/aimaze/\_\_init\_\_.py. Debe estar vacío."  
 3. **Configurar python-dotenv y config.py:**  
    * Prompt para la IA integrada en el IDE:  
      "Necesitamos configurar python-dotenv para cargar variables de entorno. Genera el código necesario en src/aimaze/config.py para cargar un archivo .env. Este módulo debería tener una función load_environment_variables() que inicialice las variables. Incluye un ejemplo de cómo cargar una variable OPENAI_API_KEY."  
@@ -182,10 +184,11 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
 **Objetivo:** Implementar el sistema de coordenadas por nivel donde cada nivel es una matriz n x m, con coordenadas de inicio y salida definidas, y identificación de ubicación por coordenadas (nivel:x:y). **NUEVO ENFOQUE:** Separar la generación estructural (determinista) de la creatividad narrativa (IA).
 
 **Filosofía del Nuevo Enfoque:**
-- **Estructura determinista:** La mazmorra siempre será navegable y funcional
-- **Creatividad controlada:** La IA se enfoca en narrativa, descripciones y eventos
-- **Debugging más fácil:** Separación clara entre problemas estructurales y de IA
-- **Escalabilidad:** Fácil extensión a múltiples niveles y configuraciones
+
+* **Estructura determinista:** La mazmorra siempre será navegable y funcional
+* **Creatividad controlada:** La IA se enfoca en narrativa, descripciones y eventos
+* **Debugging más fácil:** Separación clara entre problemas estructurales y de IA
+* **Escalabilidad:** Fácil extensión a múltiples niveles y configuraciones
 
 **Acciones:**
 
@@ -211,14 +214,33 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
      * **Sin IA:** No uses ChatOpenAI ni prompts para la estructura, solo para descripciones/eventos.  
      * **Función helper:** Implementa generate_main_path(start, end, width, height) -> List[Tuple[int, int]].  
      * **Función helper:** Implementa add_extra_rooms_and_connect(path_rooms, width, height) -> Dict[str, Room].  
-     * **Función helper:** Implementa create_dungeon_from_rooms(rooms, width, height, start, exit) -> Dungeon."  
+     * **Función helper:** Implementa create_dungeon_from_rooms(rooms, width, height, start, exit) -> Dungeon."
+
+   2.1 **Puntos fijos:**
+
+   * Escoger aleatoriamente un punto de inicio y un punto de salida.
+   * El punto de inicio y el punto de salida no pueden coincidir. Si coinciden, escoger otro punto de salida.
+   * Solicitar a la IA que genere una función que realice esta tarea.
+
+   2.2 **Camino principal:**
+
+   * Generar un número aleatorio entre .8 y 1.0, será el porcentaje de habitaciones pertenecientes al camino principal, la longitud del camino.
+   * Prompt para la IA integrada en el IDE:
+   "Genera una función Python que recbiendo un tamaño de matriz, un punto de inicio y un punto de salida y un tamaño de camino, genere un camino de longitud igual al tamaño de camino, que conecte el punto de inicio con el punto de salida (no se permiten conexiones oblicuas) sin visitar el mismo punto dos veces.
+   Para ello debe generar todos los caminos posibles entre el punto de inicio y el punto de salida que no tengan repeticiones, escogeremos uno de ellos de forma aleatoria. Si no hubiera caminos posibles escogeremos el camino más largo posible".
+   * Utilizando este camino generaremos las habitaciones del camino en la mazmorra indicando la puerta de entrada y la puerta de salida.
+
+   2.3 **Habitaciones adicionales:**
+
+   * Completar el resto de habitaciones de la mazmorra, para cada habitación que no pertnezca al camino principal abrir una puerta a una habitación adyacente, siempre que esa habitacion no sea la de inicio o la de salida.
+   * Solicitar a la IA que genere una función que realice esta tarea.
 
 3. **Actualizar game_state.py para PlayerLocation:**  
    * Prompt para la IA integrada en el IDE:  
      "Modifica src/aimaze/game_state.py para usar PlayerLocation:  
      * Importa PlayerLocation y Dungeon de src/aimaze/dungeon.py.  
      * Reemplaza player_location_id con player_location: PlayerLocation.  
-     * En initialize_game_state(), llama a generate_deterministic_dungeon_layout() y almacena el resultado como game_state['dungeon'].  
+     * En initialize_game_state(), llama a generate_dungeon_layout() y almacena el resultado como game_state['dungeon'].  
      * Inicializa game_state['player_location'] con las start_coords del nivel 1 del dungeon generado.  
      * Elimina referencias a simulated_dungeon_layout."
 
@@ -226,14 +248,14 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
 
 1. **Conectividad y Coordenadas:**  
    * Prompt para la IA integrada en el IDE:  
-     "Genera múltiples mazmorras usando generate_deterministic_dungeon_layout(). Verifica manualmente: ¿Las coordenadas están siempre dentro de límites? ¿Las connections apuntan siempre a coordenadas válidas? ¿Existe siempre un camino desde start_coords hasta exit_coords? ¿La estructura es consistente y navegable?"
+     "Genera múltiples mazmorras usando generate_dungeon_layout(). Verifica manualmente: ¿Las coordenadas están siempre dentro de límites? ¿Las connections apuntan siempre a coordenadas válidas? ¿Existe siempre un camino desde start_coords hasta exit_coords? ¿La estructura es consistente y navegable?"
 
 **Tests (Paso 1.4):**
 
 1. **Test de generación determinista:**  
    * Prompt para la IA integrada en el IDE:  
      "Crea un archivo de test tests/test_dungeon_deterministic.py.  
-     * Test que generate_deterministic_dungeon_layout() siempre devuelve una Dungeon válida.  
+     * Test que generate_dungeon_layout() siempre devuelve una Dungeon válida.  
      * Test que verifica conectividad completa (todas las habitaciones alcanzables).  
      * Test que valida coordenadas dentro de límites para múltiples ejecuciones.  
      * Test que confirma que start_coords y exit_coords están correctamente definidas.  
@@ -244,7 +266,7 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
      "Crea un archivo de test tests/test_dungeon_coordinates.py.  
      * Test PlayerLocation.to_string() devuelve formato correcto 'nivel:x:y'.  
      * Test get_room_at_coords() encuentra habitaciones por coordenadas correctamente.  
-     * Test para generate_deterministic_dungeon_layout que verifique que devuelve una instancia Dungeon válida con coordenadas consistentes."
+     * Test para generate_dungeon_layout que verifique que devuelve una instancia Dungeon válida con coordenadas consistentes."
 
 ### **Paso 1.5: Opciones Dinámicas basadas en Coordenadas (display.py, actions.py)**
 
@@ -416,29 +438,29 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
 
 ### **4.1. Sistema de Coordenadas**
 
-- **PlayerLocation:** Identifica la posición como (nivel:x:y)
-- **Level:** Matriz n x m con coordenadas de inicio y salida explícitas
-- **Dungeon:** Colección de niveles con navegación multi-nivel
-- **Room:** Coordenadas específicas dentro de un nivel con connections a coordenadas adyacentes
+* **PlayerLocation:** Identifica la posición como (nivel:x:y)
+* **Level:** Matriz n x m con coordenadas de inicio y salida explícitas
+* **Dungeon:** Colección de niveles con navegación multi-nivel
+* **Room:** Coordenadas específicas dentro de un nivel con connections a coordenadas adyacentes
 
 ### **4.2. Separación de Contenido Visual**
 
-- **LocationDescription:** Solo descripción textual, sin ASCII art
-- **GameEvent:** Incluye ASCII art cuando es relevante (monstruos, trampas, efectos)
-- **Display Logic:** Maneja ambos tipos de contenido apropiadamente
+* **LocationDescription:** Solo descripción textual, sin ASCII art
+* **GameEvent:** Incluye ASCII art cuando es relevante (monstruos, trampas, efectos)
+* **Display Logic:** Maneja ambos tipos de contenido apropiadamente
 
 ### **4.3. Escalabilidad**
 
-- **Multi-nivel:** Preparado para múltiples niveles de mazmorra
-- **Coordenadas flexibles:** Cada nivel puede tener dimensiones diferentes
-- **Navegación consistente:** Sistema unificado de movimiento por coordenadas
+* **Multi-nivel:** Preparado para múltiples niveles de mazmorra
+* **Coordenadas flexibles:** Cada nivel puede tener dimensiones diferentes
+* **Navegación consistente:** Sistema unificado de movimiento por coordenadas
 
 ### **4.4. Cambios Críticos vs Implementación Actual**
 
-- **ELIMINADO:** `player_location_id` → **NUEVO:** `PlayerLocation(level, x, y)`
-- **ELIMINADO:** `simulated_dungeon_layout` → **NUEVO:** `Dungeon` con `Level` y coordenadas
-- **ELIMINADO:** `ascii_art` en `LocationDescription` → **MOVIDO:** a `GameEvent` cuando sea apropiado
-- **ACTUALIZADO:** Toda la lógica de navegación para usar coordenadas
+* **ELIMINADO:** `player_location_id` → **NUEVO:** `PlayerLocation(level, x, y)`
+* **ELIMINADO:** `simulated_dungeon_layout` → **NUEVO:** `Dungeon` con `Level` y coordenadas
+* **ELIMINADO:** `ascii_art` en `LocationDescription` → **MOVIDO:** a `GameEvent` cuando sea apropiado
+* **ACTUALIZADO:** Toda la lógica de navegación para usar coordenadas
 
 ## **5. Fase 2: Plan de Distribución del MVP**
 
