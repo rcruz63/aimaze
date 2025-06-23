@@ -2,17 +2,36 @@ import unittest
 from unittest.mock import patch, MagicMock
 from aimaze.game_state import initialize_game_state
 from aimaze.player import Player
+from aimaze.dungeon import PlayerLocation, Dungeon, Level, Room
 
 class TestGameState(unittest.TestCase):
     @patch('aimaze.game_state.load_config')
-    @patch('aimaze.game_state.get_simulated_dungeon_layout')
-    def test_initialize_game_state_returns_expected_keys(self, mock_dungeon_layout, mock_load_config):
-        # Configurar el mock de get_simulated_dungeon_layout
-        mock_dungeon_layout.return_value = {
-            "inicio": {"connections": {"north": "sala_1"}},
-            "sala_1": {"connections": {"south": "inicio", "north": "salida"}},
-            "salida": {"connections": {"south": "sala_1"}}
-        }
+    @patch('aimaze.game_state.generate_dungeon_layout')
+    def test_initialize_game_state_returns_expected_keys(self, mock_generate_dungeon, mock_load_config):
+        # Crear una mazmorra de prueba para el mock
+        test_room = Room(
+            id="start_room",
+            coordinates=(0, 0),
+            connections={'east': (1, 0)}
+        )
+        
+        test_level = Level(
+            id=1,
+            width=3,
+            height=3,
+            start_coords=(0, 0),
+            exit_coords=(2, 2),
+            rooms={"0,0": test_room}
+        )
+        
+        test_dungeon = Dungeon(
+            total_levels=1,
+            current_level=1,
+            levels={1: test_level}
+        )
+        
+        # Configurar el mock de generate_dungeon_layout
+        mock_generate_dungeon.return_value = test_dungeon
 
         # Llamar a la función bajo prueba
         game_state = initialize_game_state()
@@ -20,23 +39,34 @@ class TestGameState(unittest.TestCase):
         # Verificar que se llamó a load_config
         mock_load_config.assert_called_once()
 
-        # Verificar que se llamó a get_simulated_dungeon_layout
-        mock_dungeon_layout.assert_called_once()
+        # Verificar que se llamó a generate_dungeon_layout
+        mock_generate_dungeon.assert_called_once()
 
-        # Verificar las claves básicas esperadas
-        self.assertIn("player_location_id", game_state)
+        # Verificar las claves básicas esperadas con nueva estructura
+        self.assertIn("player_location", game_state)
         self.assertIn("game_over", game_state)
         self.assertIn("objective_achieved", game_state)
         self.assertIn("player", game_state)
-        self.assertIn("simulated_dungeon_layout", game_state)
+        self.assertIn("dungeon", game_state)
 
         # Verificar los valores iniciales
-        self.assertEqual(game_state["player_location_id"], "inicio")
         self.assertFalse(game_state["game_over"])
         self.assertFalse(game_state["objective_achieved"])
         
         # Verificar que player es una instancia de Player
         self.assertIsInstance(game_state["player"], Player)
+        
+        # Verificar que player_location es una instancia de PlayerLocation
+        self.assertIsInstance(game_state["player_location"], PlayerLocation)
+        
+        # Verificar que dungeon es una instancia de Dungeon
+        self.assertIsInstance(game_state["dungeon"], Dungeon)
+        
+        # Verificar la ubicación inicial del jugador
+        player_location = game_state["player_location"]
+        self.assertEqual(player_location.level, 1)
+        self.assertEqual(player_location.x, 0)
+        self.assertEqual(player_location.y, 0)
         
         # Verificar los atributos iniciales del jugador
         player = game_state["player"]

@@ -611,3 +611,7 @@ Expandir las capacidades de generación de contenido dinámico y mejorar la narr
 ---
 
 **Estas fases de mejora se implementarán después de completar el MVP básico funcional. Las mejoras están diseñadas para ser iterativas y no bloquear el desarrollo del núcleo del juego.**
+
+## Apuntes para que no se me olviden
+
+* En la generación de la mazmorra debe exitir la posibilidad de crear caminos sin salida que te obliguen a volver hacia atras.
