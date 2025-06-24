@@ -3,6 +3,7 @@
 ## Fase 1: Flujo Básico del Juego e Integración de IA (Generación de Texto)
 
 ### Paso 1.1: Configuración del Entorno y Refinamiento del Esqueleto Inicial
+
 - [x] Crear archivo src/aimaze/__init__.py
 - [x] Configurar python-dotenv
 - [x] Actualizar game_state.py para usar configuración
