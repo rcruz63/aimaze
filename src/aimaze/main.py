@@ -26,6 +26,7 @@ def game_loop():
         print("La aventura ha terminado. (Por ahora, esto solo ocurre al salir con éxito).")
         print("Aquí se mostrarían mensajes de derrota si el juego terminara por otras causas.")
 
+
 # Entry point of the game
 if __name__ == "__main__":
     game_loop()

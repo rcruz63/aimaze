@@ -1,7 +1,7 @@
 # src/aimaze/dungeon.py
 
 from pydantic import BaseModel, Field
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, Tuple, Optional
 
 
 class PlayerLocation(BaseModel):
@@ -9,7 +9,7 @@ class PlayerLocation(BaseModel):
     level: int
     x: int
     y: int
-    
+
     def to_string(self) -> str:
         """Returns location in format 'nivel:x:y'."""
         return f"{self.level}:{self.x}:{self.y}"
@@ -48,12 +48,12 @@ class Dungeon(BaseModel):
 def get_room_at_coords(level: Level, x: int, y: int) -> Optional[Room]:
     """
     Helper function to get a room at specific coordinates within a level.
-    
+
     Args:
         level: The Level object to search in
         x: X coordinate of the room
         y: Y coordinate of the room
-        
+
     Returns:
         Room object if found, None otherwise
     """

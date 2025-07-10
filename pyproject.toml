@@ -23,3 +23,13 @@ dependencies = [
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+# Configuración de pymarkdownlnt
+[tool.pymarkdownlnt]
+line_length = 100
+enabled_rules = ["MD013", "MD047"]
+
+[dependency-groups]
+dev = [
+    "autopep8>=2.3.2",
+]

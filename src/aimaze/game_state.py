@@ -1,6 +1,6 @@
 # src/aimaze/game_state.py
 
-from aimaze.dungeon import PlayerLocation, Dungeon
+from aimaze.dungeon import PlayerLocation
 from aimaze.ai_connector import generate_dungeon_layout
 from aimaze.config import load_config
 from aimaze.player import Player
@@ -30,7 +30,7 @@ def initialize_game_state():
     # --- GENERATE DUNGEON USING AI ---
     # Generate dungeon layout using AI
     game_state["dungeon"] = generate_dungeon_layout()
-    
+
     # Initialize player location with start coordinates of level 1
     level_1 = game_state["dungeon"].levels[1]
     start_x, start_y = level_1.start_coords
@@ -44,19 +44,19 @@ def check_game_over(game_state):
     """
     Checks if the game should end based on current game state.
     Returns True if the player has died (health <= 0) or other game over conditions.
-    
+
     Args:
         game_state: The current game state dictionary
-        
+
     Returns:
         bool: True if game should end, False otherwise
     """
     player = game_state.get("player")
-    
+
     if player and player.health <= 0:
         return True
-    
+
     # Otras condiciones de game over pueden añadirse aquí en el futuro
     # Por ejemplo: tiempo límite, condiciones especiales de la mazmorra, etc.
-    
+
     return False
