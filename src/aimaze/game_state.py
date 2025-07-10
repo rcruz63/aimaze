@@ -38,3 +38,25 @@ def initialize_game_state():
     # --- END AI GENERATION ---
 
     return game_state
+
+
+def check_game_over(game_state):
+    """
+    Checks if the game should end based on current game state.
+    Returns True if the player has died (health <= 0) or other game over conditions.
+    
+    Args:
+        game_state: The current game state dictionary
+        
+    Returns:
+        bool: True if game should end, False otherwise
+    """
+    player = game_state.get("player")
+    
+    if player and player.health <= 0:
+        return True
+    
+    # Otras condiciones de game over pueden añadirse aquí en el futuro
+    # Por ejemplo: tiempo límite, condiciones especiales de la mazmorra, etc.
+    
+    return False

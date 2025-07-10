@@ -297,49 +297,111 @@ Desarrollar un juego de texto interactivo funcional en la terminal, donde la maz
      * En test_display.py, mockea un game_state con Dungeon y PlayerLocation válidos, verifica que display_scenario muestra opciones basadas en coordenadas.  
      * En test_actions_coordinates.py, verifica que process_player_action actualiza correctamente PlayerLocation y detecta condiciones de salida basadas en exit_coords."
 
-### **Paso 1.6: Gestión de Eventos con ASCII Art y Narrativa (events.py, ai_connector.py, actions.py, display.py)**
+### **Paso 1.6: Sistema Extensible de Eventos con Énfasis en Enigmas (events.py, ai_connector.py, actions.py, display.py)**
 
-**Objetivo:** La IA genera eventos que pueden incluir ASCII art y se resuelven con una "tirada de dados" narrativa.
+**Objetivo:** Establecer un sistema de eventos extensible que priorice enigmas mentales sobre mecánicas de dados, con ASCII art y estructura preparada para eventos multi-habitación en futuras fases.
+
+**Filosofía de Eventos:**
+
+* **Enigmas primero:** Los eventos se resuelven principalmente mediante retos mentales y lógica
+* **Mecánicas de dados secundarias:** Solo para eventos de acción cuando sea narrativamente apropiado
+* **Estructura extensible:** Tipologías de eventos fácilmente ampliables
+* **Multi-habitación preparado:** Bases para eventos complejos en fases posteriores
 
 **Acciones:**
 
-1. **Modelos GameEvent en src/aimaze/events.py:**  
+1. **Sistema de Tipologías Extensible en src/aimaze/events.py:**  
    * Prompt para la IA integrada en el IDE:  
      "Modifica src/aimaze/events.py.  
-     * Importa BaseModel, Field, Literal, Optional, Tuple y random.  
-     * Define un Pydantic BaseModel GameEvent con: type (Literal: 'obstacle', 'monster', 'puzzle'), description: str, ascii_art: Optional[str] = Field(None, description='ASCII art representation of the event or character. Max 20 lines, 80 characters per line, monochrome green style.'), required_attribute: Optional[Literal['strength', ...]], difficulty_check: Optional[int], success_text: str, failure_text: str, xp_reward: int = 0, damage_on_failure: int = 0.  
-     * Implementa una función resolve_event(game_state, event: GameEvent) -> Tuple[bool, str] que simule una tirada de d20 + atributo. Genera una narrativa del resultado (éxito/fracaso) sin mostrar números. Actualiza XP y salud del jugador vía player.py."  
-2. **Función generate_random_event en src/aimaze/ai_connector.py:**  
-   * Prompt para la IA integrada en el IDE:  
-     "Añade a src/aimaze/ai_connector.py una nueva función generate_random_event(location_context: str) -> Optional[GameEvent] que:  
-     * Use ChatOpenAI y PromptTemplate para pedir a la IA que genere un evento significativo (ej. un pequeño obstáculo, una criatura débil, un enigma sencillo) siguiendo la estructura GameEvent.  
-     * **La IA debe generar ascii_art solo cuando sea apropiado para el evento (monstruos, trampas visuales, efectos mágicos), y None en caso contrario.**  
-     * La IA debe generar un solo evento por llamada o None.  
-     * Utiliza PydanticOutputParser y OutputFixingParser."  
-3. **Integrar Eventos y ASCII Art en src/aimaze/actions.py y display.py:**  
-   * Prompt para la IA integrada en el IDE:  
-     "Modifica src/aimaze/actions.py y src/aimaze/display.py.  
-     * En actions.py, después de que el jugador se mueva a una nueva ubicación, introduce una probabilidad (ej. 30%) de generar un evento aleatorio. Si se genera, almacena el evento en game_state para que display.py pueda mostrarlo.  
-     * En display.py, antes de mostrar las opciones, **si existe un evento activo en game_state y tiene ascii_art**, imprímelo. Luego, imprime la event.description."
+     * Importa BaseModel, Field, Literal, Optional, Tuple, Dict, Enum y random.  
+     * Define un Enum EventType con valores iniciales: PUZZLE_RIDDLE, PUZZLE_LOGIC, PUZZLE_OBSERVATION, OBSTACLE_PHYSICAL, ENCOUNTER_CREATURE, ENCOUNTER_NPC.
+     * Define un Dict EVENT_TYPE_PROMPTS que mapee cada EventType a un texto guía para la IA:
+       * PUZZLE_RIDDLE: 'Generate a riddle or word puzzle that requires mental reasoning'
+       * PUZZLE_LOGIC: 'Create a logic puzzle or pattern recognition challenge'  
+       * PUZZLE_OBSERVATION: 'Design a puzzle requiring careful observation of details'
+       * OBSTACLE_PHYSICAL: 'Create a physical obstacle requiring attribute check'
+       * ENCOUNTER_CREATURE: 'Generate a creature encounter (may require combat or cleverness)'
+       * ENCOUNTER_NPC: 'Create an NPC interaction with dialogue or task'
+     * Define un Pydantic BaseModel GameEvent con:
+       * event_type: EventType
+       * description: str  
+       * ascii_art: Optional[str] = Field(None, description='ASCII art for the event (onomatopeyas, drawings, mysterious text)')
+       * puzzle_solution: Optional[str] = Field(None, description='Expected solution for puzzle events')
+       * alternative_solutions: List[str] = Field(default_factory=list, description='Alternative valid solutions')
+       * success_text: str
+       * failure_text: str  
+       * xp_reward: int = 0
+       * item_reward: Optional[str] = Field(None, description='Item ID awarded on success')
+       * clue_reward: Optional[str] = Field(None, description='Clue text awarded on success')  
+       * damage_on_failure: int = 0
+       > Campos para futuras fases multi-habitación:
+       * event_size: int = Field(1, description='Number of key rooms involved (for future multi-room events)')
+       * related_locations: List[str] = Field(default_factory=list, description='Other room coordinates involved')
+     * Implementa resolve_event(game_state, event: GameEvent, player_input: str) -> Tuple[bool, str] que:
+       * Para eventos PUZZLE_*: Compare player_input con puzzle_solution y alternative_solutions (case-insensitive, stripped)
+       * Para otros eventos: Use mecánica de atributos + dado solo si es narrativamente apropiado
+       * Actualice XP, salud, inventario según el resultado
+       * Genere narrativa sin mostrar mecánicas internas"
 
-**Validación de IA (Paso 1.6):**
-
-1. **Comportamiento de Eventos y ASCII Art:**  
+2. **Generación Inteligente por Tipo en src/aimaze/ai_connector.py:**  
    * Prompt para la IA integrada en el IDE:  
-     "Ejecuta el juego varias veces. Observa los eventos generados por la IA: ¿Son coherentes con los tipos definidos? ¿Las descripciones son apropiadas? ¿Los textos de éxito/fracaso son narrativos y sin números? ¿El ASCII art aparece solo cuando es relevante y sigue el estilo? Si hay problemas, indica ajustes al prompt de generate_random_event."
+     "Añade a src/aimaze/ai_connector.py:
+     * Función generate_event_by_type(event_type: EventType, location_context: str) -> Optional[GameEvent] que:
+       * Use el prompt específico de EVENT_TYPE_PROMPTS[event_type]  
+       * Incluya el contexto de la ubicación actual
+       * Para eventos PUZZLE_*: Instruya a la IA a generar tanto la pregunta como la respuesta esperada
+       * Para ASCII art: Solo genere cuando sea apropiado (criaturas, efectos visuales, textos misteriosos)
+       * Use PydanticOutputParser y OutputFixingParser
+     * Función generate_random_event(location_context: str) -> Optional[GameEvent] que:
+       * Escoja aleatoriamente un EventType (favoreciendo PUZZLE_* con 60% probabilidad)
+       * Delegue a generate_event_by_type()"
 
-**Tests (Paso 1.6):**
+3. **Integración Preparada para Expansión en src/aimaze/actions.py y display.py:**  
+   * Prompt para la IA integrada en el IDE:  
+     "Modifica src/aimaze/actions.py y src/aimaze/display.py:
+     * En actions.py:
+       * Al moverse a nueva ubicación, probabilidad 30% de generar evento
+       * Si hay evento activo tipo PUZZLE_*, permitir que el jugador escriba respuestas libres
+       * Si hay evento activo tipo ENCOUNTER_*, mostrar opciones específicas (huir, negociar, enfrentar)
+       * Almacenar eventos resueltos en game_state['completed_events'] para futuras referencias
+     * En display.py:
+       * Si existe evento activo con ascii_art, mostrarlo prominentemente
+       * Para eventos PUZZLE_*: Mostrar prompt para respuesta libre del jugador  
+       * Para otros eventos: Mostrar opciones predefinidas
+       * Indicar tipo de evento sutilmente en la narrativa (sin exponer mecánicas)"
 
-1. **Test de events.py:**  
+**Preparación para Fases Futuras:**
+
+**Comentarios de Arquitectura Multi-Habitación:**
+
+* Prompt para la IA integrada en el IDE:
+   "Añade comentarios en src/aimaze/events.py y src/aimaze/quest_manager.py:
+      * En events.py: Comentario detallando cómo event_size y related_locations se usarán en Fase 2 para eventos como 'puerta cerrada en (1,1) requiere llave de NPC en (3,2)'
+      * En quest_manager.py: Comentario sobre futura integración con sistema de eventos para crear cadenas de eventos interconectados"
+
+**Validación de IA Mejorada (Paso 1.6):**
+
+1. **Calidad de Enigmas:**  
    * Prompt para la IA integrada en el IDE:  
-     "Crea o actualiza un archivo de test tests/test_events.py.  
-     * Crea un test para events.resolve_event que use unittest.mock.patch para simular random.randint (para controlar la tirada) y que verifique los resultados de éxito y fracaso (cambios en HP, XP, y los mensajes narrativos).  
-     * Asegúrate de que el GameEvent de prueba pueda incluir ascii_art y que la función lo maneje correctamente (aunque la función resolve_event no lo 'muestra', solo lo 'tiene')."  
-2. **Test de Integración de ASCII Art en display.py:**  
+     "Ejecuta generate_event_by_type() para cada tipo PUZZLE_*. Verifica: ¿Los enigmas son apropiados para el nivel? ¿Las soluciones están claras? ¿El ASCII art es relevante? ¿Los textos guía producen eventos coherentes? Ajusta EVENT_TYPE_PROMPTS según resultados."
+
+**Tests Actualizados (Paso 1.6):**
+
+1. **Test del Sistema de Tipologías:**  
    * Prompt para la IA integrada en el IDE:  
-     "Actualiza tests/test_display.py.  
-     * Añade un test que simule un game_state con un GameEvent activo que contenga ascii_art.  
-     * Verifica que display.display_scenario intenta imprimir este ascii_art cuando se invoca."
+     "Crea tests/test_events.py:
+     * Test que verify que cada EventType tiene su prompt correspondiente en EVENT_TYPE_PROMPTS
+     * Test resolve_event() con diferentes tipos de eventos y entradas del jugador
+     * Test para puzzle events que verifique matching de soluciones (incluyendo alternativas)
+     * Test para mecánica de atributos en eventos no-puzzle
+     * Mock test para verificar que eventos completados se almacenan correctamente"
+
+2. **Test de Generación por Tipo:**
+   * Prompt para la IA integrada en el IDE:
+     "Actualiza tests/test_display.py:
+     * Test que simule diferentes tipos de eventos activos
+     * Verificar que se muestran las opciones correctas según el tipo de evento
+     * Test de integración ASCII art con diferentes tipos de eventos"
 
 ### **Paso 1.7: Condiciones de Fin de Juego y Guardado Básico (game_state.py, save_load.py)**
 
@@ -615,3 +677,181 @@ Expandir las capacidades de generación de contenido dinámico y mejorar la narr
 ## Apuntes para que no se me olviden
 
 * En la generación de la mazmorra debe exitir la posibilidad de crear caminos sin salida que te obliguen a volver hacia atras.
+
+## **9. Fase 5: Sistema de Eventos Multi-Habitación y Complejos**
+
+### **Objetivo de la Fase 5:**
+
+Implementar eventos complejos que involucren múltiples habitaciones, cadenas de eventos interconectados y mini-aventuras dentro del juego.
+
+### **Paso 5.1: Eventos Multi-Habitación**
+
+**Objetivo:** Crear eventos que requieran la interacción entre múltiples habitaciones.
+
+**Ejemplos de Eventos Multi-Habitación:**
+- **Puerta Cerrada + Llave:** Puerta en (1,1) requiere llave que está con NPC en (3,2)
+- **Enigma Distribuido:** Pistas en 3 habitaciones diferentes para resolver un enigma final
+- **Secuencia Temporal:** Activar mecanismos en orden específico en diferentes habitaciones
+
+**Acciones:**
+
+1. **Extender GameEvent para Multi-Habitación:**
+   ```python
+   # Nuevos campos en GameEvent:
+   event_chain_id: Optional[str] = None  # ID único para eventos conectados
+   prerequisite_events: List[str] = []   # IDs de eventos que deben completarse primero
+   triggers_events: List[str] = []       # IDs de eventos que se activan al completar este
+   primary_location: str                 # Coordenadas de la habitación principal
+   secondary_locations: List[str] = []   # Coordenadas de habitaciones secundarias
+   ```
+
+2. **Event Chain Manager:**
+   - Clase `EventChainManager` que rastree el progreso de eventos complejos
+   - Método `check_chain_completion()` para verificar si una cadena está completa
+   - Integración con `quest_manager.py` para eventos que forman parte de quests
+
+3. **Generación Inteligente de Cadenas:**
+   - IA que genere eventos considerando la topología de la mazmorra
+   - Algoritmos que garanticen que las cadenas de eventos sean solucionables
+   - Validación de que todas las habitaciones requeridas son accesibles
+
+### **Paso 5.2: Tipos de Eventos Complejos**
+
+**Objetivo:** Implementar tipologías específicas de eventos multi-habitación.
+
+**Nuevos Tipos de Eventos:**
+
+1. **QUEST_FETCH:** "Trae X objeto de la habitación Y"
+2. **QUEST_DELIVERY:** "Lleva este objeto a la habitación Z"  
+3. **PUZZLE_DISTRIBUTED:** "Recolecta pistas de N habitaciones"
+4. **SEQUENCE_RITUAL:** "Activa elementos en orden específico"
+5. **EXPLORATION_MAPPING:** "Encuentra y reporta sobre habitaciones específicas"
+
+**Implementación:**
+```python
+# Extensión de EVENT_TYPE_PROMPTS:
+EVENT_TYPE_PROMPTS.update({
+    EventType.QUEST_FETCH: "Create a fetch quest requiring the player to retrieve a specific item from another room",
+    EventType.QUEST_DELIVERY: "Generate a delivery quest where player must transport an item to a specific location",
+    EventType.PUZZLE_DISTRIBUTED: "Design a puzzle that requires collecting clues from multiple rooms",
+    EventType.SEQUENCE_RITUAL: "Create a ritual or sequence that must be performed across multiple locations",
+    EventType.EXPLORATION_MAPPING: "Generate an exploration task requiring discovery of specific rooms or features"
+})
+```
+
+### **Paso 5.3: Sistema de Objetos Inteligente**
+
+**Objetivo:** Crear objetos que interactúen naturalmente con el sistema de eventos.
+
+**Tipos de Objetos:**
+- **Llaves Específicas:** `golden_key`, `crystal_key`, etc.
+- **Componentes de Enigma:** `ancient_scroll_piece_1`, `rune_stone_fire`
+- **Herramientas:** `magic_mirror` (revela pistas), `skeleton_key` (abre múltiples puertas)
+- **Consumibles:** `health_potion`, `wisdom_elixir` (mejora resolución de enigmas)
+
+**Integración con Eventos:**
+```python
+# Ejemplo de evento que otorga objeto específico:
+GameEvent(
+    event_type=EventType.PUZZLE_RIDDLE,
+    description="An ancient statue poses a riddle...",
+    puzzle_solution="time",
+    item_reward="golden_key",
+    success_text="The statue's eyes glow and it presents you with a golden key!"
+)
+```
+
+### **Paso 5.4: IA Contextual para Eventos**
+
+**Objetivo:** Hacer que la IA genere eventos considerando el contexto completo de la mazmorra.
+
+**Características:**
+- **Contexto Espacial:** IA conoce la topología de la mazmorra al generar eventos
+- **Contexto Temporal:** Considera eventos previos del jugador
+- **Contexto de Inventario:** Genera eventos apropiados según objetos disponibles
+- **Contexto de Progreso:** Adapta dificultad según experiencia del jugador
+
+**Implementación:**
+```python
+def generate_contextual_event(
+    current_location: PlayerLocation,
+    dungeon: Dungeon,
+    player_history: List[str],
+    player_inventory: List[str],
+    player_level: int
+) -> Optional[GameEvent]:
+    # IA genera eventos considerando todo el contexto
+    context = {
+        "current_room": current_location.to_string(),
+        "accessible_rooms": get_accessible_rooms(current_location, dungeon),
+        "player_history": player_history,
+        "inventory": player_inventory,
+        "experience_level": player_level
+    }
+    return ai_generate_smart_event(context)
+```
+
+## **10. Fase 6: Narrativa Emergente y Eventos Adaptativos**
+
+### **Objetivo de la Fase 6:**
+
+Crear un sistema donde los eventos se adapten dinámicamente a las decisiones del jugador y generen narrativa emergente.
+
+### **Paso 6.1: Memoria de Eventos**
+
+**Objetivo:** El sistema recuerda las decisiones del jugador y adapta eventos futuros.
+
+**Características:**
+- **Historial de Decisiones:** Registro de cómo el jugador resuelve diferentes tipos de eventos
+- **Preferencias Detectadas:** IA detecta si el jugador prefiere enigmas, exploración, interacción social
+- **Consecuencias a Largo Plazo:** Decisiones en eventos tempranos afectan eventos posteriores
+
+### **Paso 6.2: Eventos Generativos**
+
+**Objetivo:** Eventos que generan otros eventos basados en las acciones del jugador.
+
+**Ejemplos:**
+- **Ayudar NPC:** Genera eventos de recompensa en habitaciones futuras
+- **Resolver Enigma Brillantemente:** Desbloquea eventos de mayor dificultad
+- **Fallar Repetidamente:** Genera eventos de ayuda o pistas adicionales
+
+### **Paso 6.3: Narrativa Coherente**
+
+**Objetivo:** Asegurar que todos los eventos contribuyan a una narrativa coherente.
+
+**Características:**
+- **Temas Consistentes:** Los eventos mantienen coherencia temática
+- **Arcos Narrativos:** Eventos forman arcos narrativos satisfactorios
+- **Resolución Significativa:** Los eventos complejos tienen resoluciones narrativamente satisfactorias
+
+---
+
+**Estas fases avanzadas se implementarán después de validar el sistema básico del Paso 1.6. Cada fase construye sobre la anterior, manteniendo la compatibilidad hacia atrás y añadiendo capas de complejidad de forma gradual.**
+
+## **Consideraciones de Implementación para Eventos**
+
+### **Prioridades de Desarrollo:**
+
+1. **Paso 1.6 (MVP):** Sistema básico extensible ✅
+2. **Fase 2:** Distribución y persistencia de eventos  
+3. **Fase 5:** Eventos multi-habitación 
+4. **Fase 6:** Narrativa emergente
+
+### **Métricas de Éxito:**
+
+- **Paso 1.6:** 60% de eventos son enigmas, ASCII art relevante, resolución narrativa fluida
+- **Fase 5:** Eventos multi-habitación funcionales y narrativamente coherentes
+- **Fase 6:** Jugadores reportan sensación de narrativa personalizada y emergente
+
+### **Compatibilidad:**
+
+- Todos los campos nuevos deben tener valores por defecto
+- Sistema de migración automática para save games
+- Retrocompatibilidad garantizada para eventos simples
+
+---
+
+## Apuntes para que no se me olviden
+
+* En la generación de la mazmorra debe exitir la posibilidad de crear caminos sin salida que te obliguen a volver hacia atras.
+* **EVENTOS:** Priorizar enigmas mentales sobre mecánicas de dados. Estructura extensible. ASCII art contextual. Preparación para eventos multi-habitación.

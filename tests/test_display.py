@@ -64,7 +64,8 @@ class TestDisplay(unittest.TestCase):
         display_scenario(self.mock_game_state)
         
         # Verificar que se llamó a la función de IA con el contexto correcto
-        expected_context = "Level 1 at (0,0) - test_room_start"
+        # Según Paso 1.5: el contexto debe incluir coordenadas en formato 'Level {nivel} at ({x},{y})'
+        expected_context = "Level 1 at (0,0)"
         mock_generate.assert_called_once_with(expected_context)
         
         # Verificar que se almacenó en game_state con la nueva clave
@@ -120,7 +121,9 @@ class TestDisplay(unittest.TestCase):
         
         # Verificar que es una instancia de LocationDescription
         self.assertIsInstance(fallback_desc, LocationDescription)
-        self.assertIn("test_room_start", fallback_desc.description)
+        # Según Paso 1.5: el mensaje de fallback usa coordenadas, no room.id
+        self.assertIn("nivel 1", fallback_desc.description.lower())
+        self.assertIn("(0,0)", fallback_desc.description)
 
     @patch('builtins.print')
     def test_display_scenario_unknown_location(self, mock_print):
