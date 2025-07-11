@@ -26,8 +26,16 @@ pythonpath = ["src"]
 
 # Configuración de pymarkdownlnt
 [tool.pymarkdownlnt]
-line_length = 100
-enabled_rules = ["MD013", "MD047"]
+# MD013: Límite de línea más razonable para documentación
+plugins.md013.line_length = 100
+# MD012: Permitir múltiples líneas en blanco consecutivas
+plugins.md012.maximum = 2
+# MD024: Permitir títulos duplicados en diferentes secciones
+plugins.md024.allow_different_nesting = true
+# MD004: Usar asterisco como estilo consistente para listas
+plugins.md004.style = "asterisk"
+# MD007: Indentación de listas más flexible
+plugins.md007.indent = 2
 
 [dependency-groups]
 dev = [

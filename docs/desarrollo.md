@@ -177,10 +177,10 @@ def procesar_accion(accion):
 def procesar_movimiento_north():
     if not puede_ir_north():
         return "No puedes ir ahí"
-    
+
     if hay_monstruo():
         return manejar_encuentro()
-    
+
     return moverse_north()
 
 def manejar_encuentro():
@@ -257,4 +257,4 @@ source .venv/bin/activate
 
 # Reinstalar dependencias
 uv sync
-``` 
+```

@@ -9,14 +9,20 @@ VENV = source .venv/bin/activate
 lint:
 	@echo "🔧 Corrigiendo formato automáticamente..."
 	$(VENV) && autopep8 --in-place --recursive src/
+	@echo "📝 Corrigiendo Markdown automáticamente..."
+	./scripts/fix_markdown.sh
 	@echo "🐍 Verificando archivos Python..."
 	$(VENV) && flake8 src/
 	@echo "📝 Verificando archivos Markdown..."
 	$(VENV) && pymarkdownlnt scan docs/
 
 format:
-	@echo "🔧 Aplicando formato automático..."
+	@echo "🔧 Aplicando formato automático Python..."
 	$(VENV) && autopep8 --in-place --recursive src/
+
+format-md:
+	@echo "🔧 Aplicando correcciones automáticas Markdown..."
+	./scripts/fix_markdown.sh
 
 check:
 	@echo "🔍 Verificando código sin aplicar cambios..."
@@ -48,10 +54,11 @@ setup:
 # Comandos de ayuda
 help:
 	@echo "Comandos disponibles:"
-	@echo "  make setup   - Configurar entorno de desarrollo"
-	@echo "  make lint    - Formatear y verificar código"
-	@echo "  make format  - Solo aplicar formato automático"
-	@echo "  make check   - Solo verificar código sin cambios"
-	@echo "  make test    - Ejecutar tests"
-	@echo "  make run     - Ejecutar el juego"
-	@echo "  make clean   - Limpiar archivos temporales" 
+	@echo "  make setup     - Configurar entorno de desarrollo"
+	@echo "  make lint      - Formatear y verificar código (Python + Markdown)"
+	@echo "  make format    - Solo aplicar formato automático Python"
+	@echo "  make format-md - Solo aplicar correcciones automáticas Markdown"
+	@echo "  make check     - Solo verificar código sin cambios"
+	@echo "  make test      - Ejecutar tests"
+	@echo "  make run       - Ejecutar el juego"
+	@echo "  make clean     - Limpiar archivos temporales" 
