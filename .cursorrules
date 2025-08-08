@@ -2,6 +2,7 @@
 
 ## Idioma
 - Todas las respuestas, prompts y textos en español.
+- Utilizar ingles para los nombres de las variables, funciones, clases, etc.
 
 ## Tooling y entorno
 - Gestor de paquetes: uv (usar `uv add <paquete>` para añadir dependencias).
