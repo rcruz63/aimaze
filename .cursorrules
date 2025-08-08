@@ -1,0 +1,27 @@
+# Reglas para cursor-agent (proyecto AiMaze)
+
+## Idioma
+- Todas las respuestas, prompts y textos en español.
+
+## Tooling y entorno
+- Gestor de paquetes: uv (usar `uv add <paquete>` para añadir dependencias).
+- Gestión de Python: pyenv.
+- Activar entorno virtual antes de ejecutar comandos: `source .venv/bin/activate`.
+- Linter Python: flake8 para `*.py`.
+- Linter Markdown: markdownlint para `docs/**/*.md`.
+- Usar los objetivos del Makefile cuando sea posible: `make setup`, `make lint`, `make check`, `make test`, `make run`.
+
+## Prácticas de desarrollo
+- Mantener cambios pequeños y con tests que pasen (`make test`).
+- Tras cambios relevantes, actualizar `docs/checklist_mvp.md` y `STATUS.md` con el avance y siguientes pasos.
+- Preferir librerías estándar cuando sea razonable (evitar dependencias innecesarias).
+- No ejecutar procesos de larga duración en herramientas de shell.
+- Commits frecuentes y descriptivos (usar `git commit` a menudo para pasos atómicos).
+- Evitar funciones largas: extraer funciones auxiliares y mantener responsabilidades acotadas.
+- Evitar ficheros demasiado grandes: dividir en módulos coherentes cuando crezcan.
+- Evitar bucles anidados profundos: usar funciones y early-returns (poner primero condiciones de salida) para reducir complejidad.
+
+## Convenciones del proyecto
+- Narrativa y mensajes del juego en español.
+- Para nuevas dependencias, usar `uv add` y registrar su uso en el código.
+- Respetar flake8 para Python y markdownlint para Markdown.
