@@ -54,12 +54,12 @@
 
 ### Paso 1.6: Generación y Resolución de Eventos Simples (Primer Encuentro)
 
-- [ ] Crear src/aimaze/events.py
-- [ ] Implementar GameEvent con tipos de eventos
-- [ ] Integrar Eventos en src/aimaze/actions.py
-- [ ] Sistema de eventos por probabilidad
-- [ ] Validación de Comportamiento de Eventos
-- [ ] Test de Resolución de Eventos
+- [x] Crear src/aimaze/events.py
+- [x] Implementar GameEvent con tipos de eventos
+- [x] Integrar Eventos en src/aimaze/actions.py
+- [x] Sistema de eventos por probabilidad
+- [ ] Validación de Comportamiento de Eventos (pendiente revisión manual)
+- [ ] Test de Resolución de Eventos (añadir tests/test_events.py)
 
 ### Paso 1.7: Condición de Game Over y Guardado Básico
 
@@ -88,7 +88,7 @@
 
 ### 🔄 En Progreso
 
-- **Sistema de eventos** (pendiente implementar events.py)
+- **Sistema de eventos** (implementado básico; falta validación manual y tests automatizados)
 
 ### 📋 Pendientes para MVP
 
@@ -99,7 +99,7 @@
 
 ### 🎯 Próximos Pasos Inmediatos
 
-1. **Implementar Paso 1.6**: Sistema de eventos simples
+1. **Finalizar Paso 1.6**: Añadir tests y validar eventos; pulir prompts si procede
 2. **Validar MVP funcional**: Juego completo de principio a fin
 3. **Documentar para distribución**: Fase 2 del plan
 

@@ -18,7 +18,8 @@ def initialize_game_state():
         "player_location": None,  # Will be initialized with PlayerLocation
         "game_over": False,
         "objective_achieved": False,
-        "player": Player()               # Initialize Player model
+        "player": Player(),              # Initialize Player model
+        "enable_events": False          # Enable random events system (1.6) - disabled by default
     }
 
     print("Here the AI will be asked to: ")

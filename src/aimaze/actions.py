@@ -3,6 +3,8 @@
 from aimaze.dungeon import get_room_at_coords
 from aimaze.game_state import check_game_over
 from aimaze.save_load import save_game
+from aimaze.ai_connector import generate_random_event
+from aimaze.events import resolve_event, GameEvent
 
 
 def process_player_action(game_state, raw_input):
@@ -90,8 +92,33 @@ def process_player_action(game_state, raw_input):
                     print("¡Has encontrado la salida del nivel!")
                     # No establecer objective_achieved aquí, el jugador debe elegir explícitamente "INTENTAR SALIR"
 
-                # Aquí se podría integrar la generación de eventos aleatorios (Paso 1.6)
-                # Por ahora dejamos placeholders para futura implementación
+                # Generación de eventos aleatorios (30% prob) al entrar en nueva habitación
+                # Evitar repetir evento si ya se resolvió en esta ubicación
+                location_key = f"event_resolved_{player_location.level}:{new_x}:{new_y}"
+                if game_state.get("enable_events", False) and not game_state.get(location_key):
+                    event = generate_random_event(
+                        f"Level {player_location.level} at ({new_x},{new_y})"
+                    )
+                    if isinstance(event, GameEvent):
+                        print("\nUn evento tiene lugar...")
+                        if event.ascii_art:
+                            print(event.ascii_art)
+
+                        player_input = None
+                        if event.puzzle_solution:
+                            # Para MVP en CLI: pedir respuesta libre del jugador
+                            try:
+                                player_input = input("Responde al reto: ").strip()
+                            except Exception:
+                                player_input = ""
+
+                        success, narrative = resolve_event(
+                            game_state, event, player_input
+                        )
+                        print(narrative)
+
+                        # Marcar evento como resuelto para esta ubicación
+                        game_state[location_key] = True
 
         else:
             print(f"\nAcción no reconocida: {chosen_action}")

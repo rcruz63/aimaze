@@ -1,6 +1,6 @@
 # Makefile para desarrollo de AiMaze
 
-.PHONY: lint format check test run clean setup
+.PHONY: lint format check test run clean setup lint-md check-md
 
 # Activar entorno virtual
 VENV = source .venv/bin/activate
@@ -13,8 +13,12 @@ lint:
 	./scripts/fix_markdown.sh
 	@echo "🐍 Verificando archivos Python..."
 	$(VENV) && flake8 src/
-	@echo "📝 Verificando archivos Markdown..."
-	$(VENV) && pymarkdownlnt scan docs/
+	@echo "📝 Verificando archivos Markdown (markdownlint)..."
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint -c .markdownlint.jsonc "docs/**/*.md"; \
+	else \
+		echo "⚠️  markdownlint no está instalado. Instálalo con: npm i -g markdownlint-cli"; \
+	fi
 
 format:
 	@echo "🔧 Aplicando formato automático Python..."
@@ -27,7 +31,20 @@ format-md:
 check:
 	@echo "🔍 Verificando código sin aplicar cambios..."
 	$(VENV) && flake8 src/
-	$(VENV) && pymarkdownlnt scan docs/
+	@$(MAKE) check-md
+
+lint-md:
+	@echo "📝 Corrigiendo Markdown automáticamente..."
+	./scripts/fix_markdown.sh
+	@$(MAKE) check-md
+
+check-md:
+	@echo "📝 Verificando archivos Markdown (markdownlint)..."
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint -c .markdownlint.jsonc "docs/**/*.md"; \
+	else \
+		echo "⚠️  markdownlint no está instalado. Instálalo con: npm i -g markdownlint-cli"; \
+	fi
 
 test:
 	@echo "🧪 Ejecutando tests..."
