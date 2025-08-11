@@ -64,6 +64,30 @@ make run
 python -m src.aimaze.main
 ```
 
+## 🔧 Variables de entorno y modo de tests
+
+- El proyecto carga variables desde `.env` (no versionado) sin sobrescribir variables ya definidas en el entorno.
+- En modo tests o si defines la variable `AIMAZE_USE_ENV_TEST=1`, también se cargará `env.test` (versionado) para completar variables faltantes sin sobrescribir las existentes.
+
+Casos de uso:
+
+- Forzar el uso de `env.test` para un solo comando:
+
+```bash
+AIMAZE_USE_ENV_TEST=1 make test
+```
+
+- Forzar en la sesión actual:
+
+```bash
+export AIMAZE_USE_ENV_TEST=1
+make test
+```
+
+Notas:
+- Usa `.env` para tus claves reales (no lo subas al repo).
+- `env.test` contiene valores dummy y está pensado para CI y desarrollo local sin exponer secretos.
+
 ## 🏗️ Arquitectura Técnica
 
 ```
