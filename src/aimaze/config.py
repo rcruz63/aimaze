@@ -4,17 +4,15 @@ from dotenv import load_dotenv
 
 def load_config():
     """
-    Carga la configuración del juego
+    Carga la configuración del juego.
+
+    - Carga .env si existe (no sobrescribe variables ya definidas)
+    - Si se está ejecutando pytest o AIMAZE_USE_ENV_TEST=1, carga env.test
+      para completar variables faltantes (sin sobrescribir las ya definidas)
     """
-    load_dotenv()
-    # Asegurar variables requeridas con valores por defecto para entorno de tests/local
-    defaults = {
-        "OPENAI_API_KEY": "dummy",
-        "SUPABASE_URL": "https://dummy.supabase.co",
-        "SUPABASE_KEY": "dummy",
-        "LANGFUSE_SECRET_KEY": "dummy",
-        "LANGFUSE_PUBLIC_KEY": "dummy",
-        "LANGFUSE_HOST": "https://cloud.langfuse.com",
-    }
-    for key, value in defaults.items():
-        os.environ.setdefault(key, value)
+    # 1) Cargar .env si existe, sin sobrescribir
+    load_dotenv(dotenv_path=".env", override=False)
+
+    # 2) Cargar env.test bajo condiciones de test o flag explícito
+    if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("AIMAZE_USE_ENV_TEST") == "1":
+        load_dotenv(dotenv_path="env.test", override=False)
