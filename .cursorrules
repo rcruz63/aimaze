@@ -1,10 +1,12 @@
 # Reglas para cursor-agent (proyecto AiMaze)
 
 ## Idioma
+
 - Todas las respuestas, prompts y textos en español.
 - Utilizar ingles para los nombres de las variables, funciones, clases, etc.
 
 ## Tooling y entorno
+
 - Gestor de paquetes: uv (usar `uv add <paquete>` para añadir dependencias).
 - Gestión de Python: pyenv.
 - Activar entorno virtual antes de ejecutar comandos: `source .venv/bin/activate`.
@@ -13,6 +15,7 @@
 - Usar los objetivos del Makefile cuando sea posible: `make setup`, `make lint`, `make check`, `make test`, `make run`.
 
 ## Prácticas de desarrollo
+
 - Mantener cambios pequeños y con tests que pasen (`make test`).
 - Tras cambios relevantes, actualizar `docs/checklist_mvp.md` y `STATUS.md` con el avance y siguientes pasos.
 - Preferir librerías estándar cuando sea razonable (evitar dependencias innecesarias).
@@ -23,6 +26,7 @@
 - Evitar bucles anidados profundos: usar funciones y early-returns (poner primero condiciones de salida) para reducir complejidad.
 
 ## Convenciones del proyecto
+
 - Narrativa y mensajes del juego en español.
 - Para nuevas dependencias, usar `uv add` y registrar su uso en el código.
 - Respetar flake8 para Python y markdownlint para Markdown.
